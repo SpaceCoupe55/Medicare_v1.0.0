@@ -28,16 +28,17 @@ jobs:
           cache: true
 
       - name: Install Dart/Flutter dependencies
+        working-directory: Medicare
         run: flutter pub get
 
       # ── Test ────────────────────────────────────────────────────────────────
-      # Widget tests that require Firebase are skipped via @Skip annotation.
-      # Remove --no-pub once your test suite is fully set up.
       - name: Run tests
+        working-directory: Medicare
         run: flutter test --no-pub
 
       # ── Build ────────────────────────────────────────────────────────────────
       - name: Build Flutter Web (release, CanvasKit)
+        working-directory: Medicare
         run: |
           flutter build web \
             --release \
@@ -53,6 +54,7 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: medicare-admin-b7266
+          entryPoint: Medicare
 
       # ── Deploy: preview (pull request) ───────────────────────────────────────
       # Posts a comment on the PR with the preview URL automatically.
@@ -63,4 +65,5 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: medicare-admin-b7266
+          entryPoint: Medicare
           # No channelId = action creates a unique preview channel per PR

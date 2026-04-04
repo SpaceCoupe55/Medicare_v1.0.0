@@ -43,7 +43,6 @@ jobs:
         run: |
           flutter build web \
             --release \
-            --web-renderer canvaskit \
             --dart-define=FLUTTER_APP_ENV=prod
 
       # ── Deploy: live (push to main) ──────────────────────────────────────────

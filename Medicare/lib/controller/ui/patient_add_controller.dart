@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/ui/patient_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
-import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 enum Gender { male, female }
@@ -118,7 +117,7 @@ class PatientAddController extends MyController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 3));
-      Get.toNamed(AppRoutes.patientList);
+      Get.back();
     } catch (e) {
       errorMessage = 'Failed to save patient. Please try again.';
       Get.snackbar('Error', errorMessage!,

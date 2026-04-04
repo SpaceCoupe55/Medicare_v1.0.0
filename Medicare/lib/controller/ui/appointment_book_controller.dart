@@ -5,7 +5,6 @@ import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/ui/appointment_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
 import 'package:medicare/models/doctor_model.dart';
-import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 enum Gender { male, female }
@@ -157,7 +156,7 @@ class AppointmentBookController extends MyController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 3));
-      Get.toNamed(AppRoutes.appointmentList);
+      Get.back();
     } catch (_) {
       errorMessage = 'Failed to book appointment. Please try again.';
       Get.snackbar('Error', errorMessage!,

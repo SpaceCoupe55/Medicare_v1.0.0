@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/ui/pharmacy_list_controller.dart';
-import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 class PharmacyAddController extends MyController {
@@ -58,7 +57,7 @@ class PharmacyAddController extends MyController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 3));
-      Get.toNamed(AppRoutes.pharmacyList);
+      Get.back();
     } catch (_) {
       errorMessage = 'Failed to save item. Please try again.';
       Get.snackbar('Error', errorMessage!,

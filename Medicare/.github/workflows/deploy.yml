@@ -1,0 +1,66 @@
+name: Build & Deploy — Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build_and_deploy:
+    name: Build Flutter Web & Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write   # required for preview channel comments
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Flutter ─────────────────────────────────────────────────────────────
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Dart/Flutter dependencies
+        run: flutter pub get
+
+      # ── Test ────────────────────────────────────────────────────────────────
+      # Widget tests that require Firebase are skipped via @Skip annotation.
+      # Remove --no-pub once your test suite is fully set up.
+      - name: Run tests
+        run: flutter test --no-pub
+
+      # ── Build ────────────────────────────────────────────────────────────────
+      - name: Build Flutter Web (release, CanvasKit)
+        run: |
+          flutter build web \
+            --release \
+            --web-renderer canvaskit \
+            --dart-define=FLUTTER_APP_ENV=prod
+
+      # ── Deploy: live (push to main) ──────────────────────────────────────────
+      - name: Deploy to Firebase Hosting — live channel
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: medicare-admin-b7266
+
+      # ── Deploy: preview (pull request) ───────────────────────────────────────
+      # Posts a comment on the PR with the preview URL automatically.
+      - name: Deploy to Firebase Hosting — preview channel
+        if: github.event_name == 'pull_request'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: medicare-admin-b7266
+          # No channelId = action creates a unique preview channel per PR

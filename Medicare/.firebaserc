@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "medicare-admin-b7266",
+    "prod":    "medicare-admin-b7266"
+  }
+}

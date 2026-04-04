@@ -7,12 +7,12 @@ import 'package:medicare/helpers/storage/local_storage.dart';
 import 'package:medicare/helpers/theme/app_notifire.dart';
 import 'package:medicare/helpers/theme/app_style.dart';
 import 'package:medicare/helpers/theme/theme_customizer.dart';
+import 'package:medicare/config/environment.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/app_notification_controller.dart';
 import 'package:medicare/routes.dart';
 import 'package:medicare/views/ui/error_pages/error_404_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:medicare/firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -28,7 +28,8 @@ Future<void> main() async {
       // without navigating away — these are non-fatal in most cases.
       FlutterError.onError = FlutterError.presentError;
 
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Firebase.initializeApp(options: Environment.firebaseOptions);
+      Environment.log();
       setPathUrlStrategy();
 
       await LocalStorage.init();

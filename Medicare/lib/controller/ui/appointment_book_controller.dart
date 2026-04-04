@@ -135,7 +135,7 @@ class AppointmentBookController extends MyController {
         time.minute,
       );
 
-      await FirebaseFirestore.instance.collection('appointments').add({
+      final docRef = await FirebaseFirestore.instance.collection('appointments').add({
         'patientId': '',
         'patientName': patientName,
         'patientPhone': patientPhoneTE.text.trim(),
@@ -148,6 +148,22 @@ class AppointmentBookController extends MyController {
         'hospitalId': _hospitalId,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // Notify the assigned doctor
+      if (selectedDoctorId.isNotEmpty) {
+        final pad = (int n) => n.toString().padLeft(2, '0');
+        final formatted =
+            '${pad(dt.day)}/${pad(dt.month)}/${dt.year} ${pad(dt.hour)}:${pad(dt.minute)}';
+        FirebaseFirestore.instance.collection('notifications').add({
+          'userId': selectedDoctorId,
+          'title': 'New appointment booked',
+          'body': 'Patient $patientName scheduled for $formatted',
+          'type': 'appointment_booked',
+          'read': false,
+          'relatedId': docRef.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
 
       try { Get.find<AppointmentListController>().refreshList(); } catch (_) {}
 

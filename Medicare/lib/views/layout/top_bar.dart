@@ -16,6 +16,8 @@ import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/images.dart';
 import 'package:medicare/controller/app_notification_controller.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/models/notification_model.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/widgets/custom_pop_menu.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +31,7 @@ class TopBar extends StatefulWidget {
 
 class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin, UIMixin {
   Function? languageHideFn;
+  Function? notificationHideFn;
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +93,7 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin, UI
                 MySpacing.width(6),
                 CustomPopupMenu(
                   backdrop: true,
+                  hideFn: (hide) => notificationHideFn = hide,
                   onChange: (_) {},
                   offsetX: -120,
                   menu: Padding(
@@ -107,7 +111,7 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin, UI
                                 right: -4,
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: Colors.red,
                                     shape: BoxShape.circle,
                                   ),
@@ -200,63 +204,185 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin, UI
   }
 
   Widget buildNotifications() {
-    Widget buildNotification(String title, String description) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [MyText.labelLarge(title), MySpacing.height(4), MyText.bodySmall(description)],
-      );
-    }
+    return Obx(() {
+      final ctrl = AppNotificationController.instance;
+      final items = ctrl.notifications;
 
-    return MyContainer.bordered(
-      paddingAll: 0,
-      width: 250,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: MySpacing.xy(16, 12),
-            child: MyText.titleMedium("Notification", fontWeight: 600),
-          ),
-          MyDashedDivider(height: 1, color: theme.dividerColor, dashSpace: 4, dashWidth: 6),
-          Padding(
-            padding: MySpacing.xy(16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                buildNotification("Your order is received", "Order #1232 is ready to deliver"),
-                MySpacing.height(12),
-                buildNotification("Account Security ", "Your account password changed 1 hour ago"),
-              ],
+      return MyContainer.bordered(
+        paddingAll: 0,
+        width: 340,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──────────────────────────────────────────────────────
+            Padding(
+              padding: MySpacing.xy(16, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  MyText.titleMedium('Notifications', fontWeight: 600),
+                  if (ctrl.unreadCount > 0)
+                    MyButton.text(
+                      onPressed: ctrl.markAllAsRead,
+                      borderRadiusAll: 6,
+                      padding: MySpacing.xy(8, 4),
+                      splashColor: contentTheme.primary.withAlpha(28),
+                      child: MyText.labelSmall('Mark all as read',
+                          color: contentTheme.primary),
+                    ),
+                ],
+              ),
             ),
-          ),
-          MyDashedDivider(height: 1, color: theme.dividerColor, dashSpace: 4, dashWidth: 6),
-          Padding(
-            padding: MySpacing.xy(13, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                MyButton.text(
-                  onPressed: () {},
-                  borderRadiusAll: 8,
-                  splashColor: contentTheme.primary.withAlpha(28),
-                  child: MyText.labelSmall(
-                    "View All",
-                    color: contentTheme.primary,
+            MyDashedDivider(
+                height: 1,
+                color: theme.dividerColor,
+                dashSpace: 4,
+                dashWidth: 6),
+
+            // ── List ────────────────────────────────────────────────────────
+            if (items.isEmpty)
+              Padding(
+                padding: MySpacing.xy(16, 24),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.bell_off,
+                          size: 32,
+                          color: contentTheme.secondary.withAlpha(100)),
+                      MySpacing.height(8),
+                      MyText.bodySmall('No notifications yet', muted: true),
+                    ],
                   ),
                 ),
-                MyButton.text(
-                  onPressed: () {},
-                  borderRadiusAll: 8,
-                  splashColor: contentTheme.danger.withAlpha(28),
-                  child: MyText.labelSmall(
-                    "Clear",
-                    color: contentTheme.danger,
-                  ),
+              )
+            else
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 380),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => Divider(
+                      height: 1, thickness: 0.5, color: theme.dividerColor),
+                  itemBuilder: (_, i) =>
+                      _notificationTile(items[i]),
                 ),
-              ],
+              ),
+
+            // ── Footer ──────────────────────────────────────────────────────
+            if (items.isNotEmpty) ...[
+              MyDashedDivider(
+                  height: 1,
+                  color: theme.dividerColor,
+                  dashSpace: 4,
+                  dashWidth: 6),
+              Padding(
+                padding: MySpacing.xy(12, 6),
+                child: MyText.labelSmall(
+                  '${ctrl.unreadCount} unread · ${items.length} total',
+                  muted: true,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
+  Color _borderColorForType(String type) {
+    switch (type) {
+      case 'appointment_booked':
+        return Colors.blue;
+      case 'appointment_cancelled':
+        return Colors.red;
+      case 'appointment_reminder':
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
+  }
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  Widget _notificationTile(NotificationModel n) {
+    final unreadBg = contentTheme.primary.withAlpha(18);
+    return InkWell(
+      onTap: () async {
+        // Mark as read
+        if (!n.read) await AppNotificationController.instance.markAsRead(n.id);
+        // Navigate to related page
+        if (n.type.startsWith('appointment')) {
+          notificationHideFn?.call();
+          Get.toNamed(AppRoutes.appointmentList);
+        } else {
+          notificationHideFn?.call();
+        }
+      },
+      child: Container(
+        color: n.read ? null : unreadBg,
+        padding: MySpacing.xy(12, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Coloured left accent
+            Container(
+              width: 4,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _borderColorForType(n.type),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          )
-        ],
+            MySpacing.width(10),
+            // Text content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: MyText.labelMedium(n.title,
+                            fontWeight: n.read ? 500 : 700,
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                      MySpacing.width(8),
+                      MyText.bodySmall(_timeAgo(n.createdAt),
+                          muted: true, fontSize: 10),
+                    ],
+                  ),
+                  MySpacing.height(2),
+                  MyText.bodySmall(n.body,
+                      muted: true,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+            // Unread dot
+            if (!n.read) ...[
+              MySpacing.width(6),
+              Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(top: 4),
+                decoration: const BoxDecoration(
+                    color: Colors.red, shape: BoxShape.circle),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -191,6 +191,10 @@ class AppointmentEditController extends MyController {
       final date = selectedDate ?? DateTime.now();
       final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
 
+      // Detect cancellation before writing
+      final wasCancelled = _appointment?.status == AppointmentStatus.cancelled;
+      final isNowCancelled = selectedStatus == AppointmentStatus.cancelled;
+
       await FirebaseFirestore.instance
           .collection('appointments')
           .doc(_appointmentId)
@@ -206,6 +210,27 @@ class AppointmentEditController extends MyController {
         'notes': treatmentTE.text.trim(),
       });
 
+      // Notify on cancellation (only when newly cancelled, not already cancelled)
+      if (!wasCancelled && isNowCancelled) {
+        String pad(int n) => n.toString().padLeft(2, '0');
+        final formatted =
+            '${pad(dt.day)}/${pad(dt.month)}/${dt.year} ${pad(dt.hour)}:${pad(dt.minute)}';
+        final doctorId = selectedDoctorId.isNotEmpty
+            ? selectedDoctorId
+            : (_appointment?.doctorId ?? '');
+        if (doctorId.isNotEmpty) {
+          FirebaseFirestore.instance.collection('notifications').add({
+            'userId': doctorId,
+            'title': 'Appointment cancelled',
+            'body': 'Appointment on $formatted has been cancelled',
+            'type': 'appointment_cancelled',
+            'read': false,
+            'relatedId': _appointmentId,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
       try { Get.find<AppointmentListController>().refreshList(); } catch (_) {}
 
       Get.snackbar('Success', 'Appointment updated',
@@ -213,7 +238,7 @@ class AppointmentEditController extends MyController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 3));
-      Get.toNamed(AppRoutes.appointmentList);
+      Get.back();
     } catch (_) {
       errorMessage = 'Failed to save changes.';
       Get.snackbar('Error', errorMessage!,

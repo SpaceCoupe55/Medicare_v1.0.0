@@ -53,7 +53,7 @@ class ChatController extends MyController {
         _subscribeToMessages(chat.first.id.toString());
       }
       update();
-    });
+    }, onError: (_) {});
   }
 
   void _subscribeToMessages(String roomId) {
@@ -82,7 +82,7 @@ class ChatController extends MyController {
         }
       }
       update();
-    });
+    }, onError: (_) {});
   }
 
   legacy.ChatModel _roomToLegacyModel(DocumentSnapshot<Map<String, dynamic>> doc) {

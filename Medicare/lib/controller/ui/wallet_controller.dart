@@ -9,7 +9,7 @@ class WalletController extends MyController {
     WalletData.dummyList.then((value) {
       wallet = value.sublist(0, 10);
       update();
-    });
+    }).catchError((_) {});
     super.onInit();
   }
 }

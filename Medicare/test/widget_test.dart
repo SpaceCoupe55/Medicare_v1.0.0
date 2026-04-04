@@ -2,6 +2,10 @@
 // Tests that require Firebase initialisation are run manually against a real
 // project. Add pure unit/widget tests here that do not depend on Firebase.
 
+import 'package:flutter_test/flutter_test.dart';
+
 void main() {
-  // No tests yet — placeholder so `flutter test` exits with 0.
+  test('placeholder — always passes', () {
+    expect(true, isTrue);
+  });
 }

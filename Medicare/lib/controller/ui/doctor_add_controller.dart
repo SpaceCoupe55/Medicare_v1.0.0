@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/controller/ui/doctor_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 enum Gender { male, female }
@@ -16,12 +18,13 @@ class DoctorAddController extends MyController {
   bool saving = false;
   String? errorMessage;
 
-  late TextEditingController nameTE, emailTE, phoneTE, degreeTE,
-      specializationTE, addressTE, biographyTE;
+  late TextEditingController firstNameTE, lastNameTE, emailTE, phoneTE,
+      degreeTE, specializationTE, addressTE, biographyTE;
 
   @override
   void onInit() {
-    nameTE          = TextEditingController();
+    firstNameTE     = TextEditingController();
+    lastNameTE      = TextEditingController();
     emailTE         = TextEditingController();
     phoneTE         = TextEditingController();
     degreeTE        = TextEditingController();
@@ -50,8 +53,10 @@ class DoctorAddController extends MyController {
   }
 
   Future<void> saveDoctor() async {
-    if (nameTE.text.trim().isEmpty) {
-      errorMessage = 'Name is required.';
+    final name =
+        '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim();
+    if (name.isEmpty) {
+      errorMessage = 'First name is required.';
       update();
       return;
     }
@@ -63,7 +68,7 @@ class DoctorAddController extends MyController {
     try {
       final user = AppAuthController.instance.user;
       await FirebaseFirestore.instance.collection('doctors').add({
-        'name': nameTE.text.trim(),
+        'name': name,
         'email': emailTE.text.trim(),
         'phone': phoneTE.text.trim(),
         'degree': degreeTE.text.trim(),
@@ -74,9 +79,22 @@ class DoctorAddController extends MyController {
         'schedule': {},
         'createdAt': FieldValue.serverTimestamp(),
       });
-      Get.back();
+
+      try { Get.find<DoctorListController>().refreshList(); } catch (_) {}
+
+      Get.snackbar('Success', 'Doctor added successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
+      Get.toNamed(AppRoutes.doctorList);
     } catch (_) {
       errorMessage = 'Failed to save doctor. Please try again.';
+      Get.snackbar('Error', errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     } finally {
       saving = false;
       update();
@@ -85,7 +103,8 @@ class DoctorAddController extends MyController {
 
   @override
   void onClose() {
-    nameTE.dispose();
+    firstNameTE.dispose();
+    lastNameTE.dispose();
     emailTE.dispose();
     phoneTE.dispose();
     degreeTE.dispose();

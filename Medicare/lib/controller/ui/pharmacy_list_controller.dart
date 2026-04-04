@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/pharmacy_model.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 class PharmacyListController extends MyController {
-  // Exposed as List (dynamic maps) so existing UI map-access syntax still works.
   List<Map<String, dynamic>> products = [];
   bool loading = false;
   bool loadingMore = false;
@@ -83,7 +84,31 @@ class PharmacyListController extends MyController {
     }
   }
 
-  void goToDetails() {
-    Get.toNamed('/detail');
+  Future<void> deleteItem(String id) async {
+    try {
+      await FirebaseFirestore.instance.collection('pharmacy').doc(id).delete();
+      _items.removeWhere((p) => p.id == id);
+      products = _items.map((p) => p.toDisplayMap()).toList();
+      update();
+      Get.snackbar('Deleted', 'Item deleted',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
+    } catch (_) {
+      Get.snackbar('Error', 'Failed to delete item.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
+    }
+  }
+
+  void goToDetails(String id) {
+    Get.toNamed(AppRoutes.pharmacyDetail, arguments: id);
+  }
+
+  void goToAdd() {
+    Get.toNamed(AppRoutes.pharmacyAdd);
   }
 }

@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/controller/ui/appointment_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
 import 'package:medicare/models/doctor_model.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 enum Gender { male, female }
@@ -22,17 +24,18 @@ class AppointmentBookController extends MyController {
   String selectedConsultingDoctor = '';
   String selectedDoctorId = '';
 
-  late TextEditingController patientNameTE, patientEmailTE,
-      patientPhoneTE, notesTE;
+  late TextEditingController patientNameTE, patientLastNameTE,
+      patientEmailTE, patientPhoneTE, notesTE;
 
   String get _hospitalId => AppAuthController.instance.user?.hospitalId ?? '';
 
   @override
   void onInit() {
-    patientNameTE  = TextEditingController();
-    patientEmailTE = TextEditingController();
-    patientPhoneTE = TextEditingController();
-    notesTE        = TextEditingController();
+    patientNameTE     = TextEditingController();
+    patientLastNameTE = TextEditingController();
+    patientEmailTE    = TextEditingController();
+    patientPhoneTE    = TextEditingController();
+    notesTE           = TextEditingController();
     super.onInit();
     _loadDoctors();
   }
@@ -53,7 +56,7 @@ class AppointmentBookController extends MyController {
         selectedDoctorId = availableDoctors.first.id;
       }
     } catch (_) {
-      // Non-fatal: form still usable with manual entry
+      // Non-fatal: dropdown will be empty
     } finally {
       loadingDoctors = false;
       update();
@@ -64,7 +67,7 @@ class AppointmentBookController extends MyController {
     final DateTime? picked = await showDatePicker(
       context: Get.context!,
       initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2015, 8),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
     if (picked != null) {
@@ -104,15 +107,17 @@ class AppointmentBookController extends MyController {
     selectedConsultingDoctor = value;
     final match = availableDoctors.firstWhere(
       (d) => d.doctorName == value,
-      orElse: () => availableDoctors.isNotEmpty ? availableDoctors.first : availableDoctors.first,
+      orElse: () => availableDoctors.first,
     );
     selectedDoctorId = match.id;
     update();
   }
 
   Future<void> submit() async {
-    if (patientNameTE.text.trim().isEmpty || selectedDate == null) {
-      errorMessage = 'Please fill in required fields.';
+    final patientName =
+        '${patientNameTE.text.trim()} ${patientLastNameTE.text.trim()}'.trim();
+    if (patientName.isEmpty || selectedDate == null) {
+      errorMessage = 'Please fill in patient name and appointment date.';
       update();
       return;
     }
@@ -133,7 +138,7 @@ class AppointmentBookController extends MyController {
 
       await FirebaseFirestore.instance.collection('appointments').add({
         'patientId': '',
-        'patientName': patientNameTE.text.trim(),
+        'patientName': patientName,
         'patientPhone': patientPhoneTE.text.trim(),
         'patientEmail': patientEmailTE.text.trim(),
         'doctorId': selectedDoctorId,
@@ -145,9 +150,21 @@ class AppointmentBookController extends MyController {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      Get.toNamed('/admin/appointment_scheduling');
+      try { Get.find<AppointmentListController>().refreshList(); } catch (_) {}
+
+      Get.snackbar('Success', 'Appointment booked successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
+      Get.toNamed(AppRoutes.appointmentList);
     } catch (_) {
       errorMessage = 'Failed to book appointment. Please try again.';
+      Get.snackbar('Error', errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     } finally {
       saving = false;
       update();
@@ -157,6 +174,7 @@ class AppointmentBookController extends MyController {
   @override
   void onClose() {
     patientNameTE.dispose();
+    patientLastNameTE.dispose();
     patientEmailTE.dispose();
     patientPhoneTE.dispose();
     notesTE.dispose();

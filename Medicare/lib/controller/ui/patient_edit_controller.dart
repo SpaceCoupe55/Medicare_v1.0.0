@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:medicare/controller/ui/patient_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
 import 'package:medicare/models/patient_model.dart';
 import 'package:medicare/views/my_controller.dart';
@@ -36,25 +37,39 @@ class PatientEditController extends MyController {
   late TextEditingController firstNameTE, lastNameTE, userNameTE, addressTE,
       suggerTE, mobileNumberTE, ageTE, bloodPressureTE, injuryTE;
 
+  // Accept full PatientModel from navigation arguments (preferred),
+  // or fall back to loading by string ID.
   PatientModel? _patient;
-  String get _patientId => Get.arguments as String? ?? '';
+
+  PatientModel? get _argPatient =>
+      Get.arguments is PatientModel ? Get.arguments as PatientModel : null;
+
+  String get _patientId => _argPatient?.id ?? (Get.arguments as String? ?? '');
 
   @override
   void onInit() {
-    firstNameTE    = TextEditingController();
-    lastNameTE     = TextEditingController();
-    userNameTE     = TextEditingController();
-    addressTE      = TextEditingController();
-    suggerTE       = TextEditingController();
-    mobileNumberTE = TextEditingController();
-    ageTE          = TextEditingController();
+    firstNameTE     = TextEditingController();
+    lastNameTE      = TextEditingController();
+    userNameTE      = TextEditingController();
+    addressTE       = TextEditingController();
+    suggerTE        = TextEditingController();
+    mobileNumberTE  = TextEditingController();
+    ageTE           = TextEditingController();
     bloodPressureTE = TextEditingController();
-    injuryTE       = TextEditingController();
+    injuryTE        = TextEditingController();
     super.onInit();
     _loadPatient();
   }
 
   Future<void> _loadPatient() async {
+    // If the full model was passed via arguments, use it directly.
+    final arg = _argPatient;
+    if (arg != null) {
+      _patient = arg;
+      _populate();
+      return;
+    }
+
     if (_patientId.isEmpty) return;
     loading = true;
     update();
@@ -86,7 +101,8 @@ class PatientEditController extends MyController {
     ageTE.text          = '${p.age}';
     injuryTE.text       = p.medicalHistory;
     selectedDate        = p.birthDate;
-    gender              = p.gender.toLowerCase() == 'female' ? Gender.female : Gender.male;
+    gender = p.gender.toLowerCase() == 'female' ? Gender.female : Gender.male;
+    update();
   }
 
   void onChangeGender(Gender? value) {
@@ -116,9 +132,15 @@ class PatientEditController extends MyController {
       final dob = selectedDate ?? _patient?.birthDate ?? DateTime(1990);
       final now = DateTime.now();
       final age = now.year - dob.year -
-          ((now.month < dob.month || (now.month == dob.month && now.day < dob.day)) ? 1 : 0);
+          ((now.month < dob.month ||
+                  (now.month == dob.month && now.day < dob.day))
+              ? 1
+              : 0);
 
-      await FirebaseFirestore.instance.collection('patients').doc(_patientId).update({
+      await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(_patientId)
+          .update({
         'name': '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim(),
         'gender': gender.name,
         'phone': mobileNumberTE.text.trim(),
@@ -128,9 +150,22 @@ class PatientEditController extends MyController {
         'medicalHistory': injuryTE.text.trim(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      try { Get.find<PatientListController>().refreshList(); } catch (_) {}
+
+      Get.snackbar('Success', 'Patient updated',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
       Get.back();
     } catch (_) {
       errorMessage = 'Failed to save changes.';
+      Get.snackbar('Error', errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     } finally {
       saving = false;
       update();

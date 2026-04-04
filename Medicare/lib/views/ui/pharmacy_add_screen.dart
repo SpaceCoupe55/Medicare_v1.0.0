@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:get/get.dart';
-import 'package:medicare/app_constant.dart';
-import 'package:medicare/controller/ui/doctor_add_controller.dart';
+import 'package:medicare/controller/ui/pharmacy_add_controller.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb_item.dart';
@@ -16,22 +15,22 @@ import 'package:medicare/helpers/widgets/my_text_style.dart';
 import 'package:medicare/helpers/widgets/responsive.dart';
 import 'package:medicare/views/layout/layout.dart';
 
-class DoctorAddScreen extends StatefulWidget {
-  const DoctorAddScreen({super.key});
+class PharmacyAddScreen extends StatefulWidget {
+  const PharmacyAddScreen({super.key});
 
   @override
-  State<DoctorAddScreen> createState() => _DoctorAddScreenState();
+  State<PharmacyAddScreen> createState() => _PharmacyAddScreenState();
 }
 
-class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
-  DoctorAddController controller = Get.put(DoctorAddController());
+class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
+  PharmacyAddController controller = Get.put(PharmacyAddController());
 
   @override
   Widget build(BuildContext context) {
     return Layout(
       child: GetBuilder(
         init: controller,
-        tag: 'admin_doctor_add_controller',
+        tag: 'pharmacy_add_controller',
         builder: (controller) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,12 +40,13 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium('Doctor Add',
+                    MyText.titleMedium('Add Pharmacy Item',
                         fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
-                        MyBreadcrumbItem(name: 'People'),
-                        MyBreadcrumbItem(name: 'Doctor Add', active: true),
+                        MyBreadcrumbItem(name: 'Operations'),
+                        MyBreadcrumbItem(name: 'Pharmacy', active: false),
+                        MyBreadcrumbItem(name: 'Add Item', active: true),
                       ],
                     ),
                   ],
@@ -61,7 +61,7 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      MyText.titleMedium('Basic Information', fontWeight: 600),
+                      MyText.titleMedium('Item Details', fontWeight: 600),
                       MySpacing.height(20),
                       if (controller.errorMessage != null) ...[
                         Container(
@@ -83,25 +83,15 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _field('First Name', 'First Name',
-                                    LucideIcons.user_round,
-                                    controller.firstNameTE),
+                                _field('Item Name', 'e.g. Paracetamol 500mg',
+                                    LucideIcons.pill, controller.nameTE),
                                 MySpacing.height(20),
-                                _field('Last Name', 'Last Name',
-                                    LucideIcons.user_round,
-                                    controller.lastNameTE),
+                                _field('Category', 'e.g. Analgesic',
+                                    LucideIcons.tag, controller.categoryTE),
                                 MySpacing.height(20),
-                                _field('Education / Degree', 'e.g. MBBS, MD',
-                                    LucideIcons.graduation_cap,
-                                    controller.degreeTE),
-                                MySpacing.height(20),
-                                _field('Specialization / Designation',
-                                    'e.g. Cardiologist',
-                                    LucideIcons.id_card,
-                                    controller.specializationTE),
-                                MySpacing.height(20),
-                                _field('Address', 'Address',
-                                    LucideIcons.map_pin, controller.addressTE),
+                                _numericField('Price (\$)', '0.00',
+                                    LucideIcons.dollar_sign, controller.priceTE,
+                                    decimal: true),
                               ],
                             ),
                           ),
@@ -110,51 +100,12 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _numericField('Mobile Number', 'Mobile Number',
-                                    LucideIcons.phone_call, controller.phoneTE,
-                                    length: 15),
+                                _numericField('Stock (units)', '0',
+                                    LucideIcons.package, controller.stockTE),
                                 MySpacing.height(20),
-                                _field('Email Address', 'Email Address',
-                                    LucideIcons.mail, controller.emailTE),
-                                MySpacing.height(20),
-                                MyText.bodyMedium('Gender', fontWeight: 600),
-                                MySpacing.height(12),
-                                Wrap(
-                                  spacing: 16,
-                                  children: Gender.values
-                                      .map((g) => InkWell(
-                                            onTap: () =>
-                                                controller.onChangeGender(g),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Radio<Gender>(
-                                                  value: g,
-                                                  activeColor:
-                                                      contentTheme.primary,
-                                                  groupValue: controller.gender,
-                                                  onChanged:
-                                                      controller.onChangeGender,
-                                                  visualDensity:
-                                                      getCompactDensity,
-                                                  materialTapTargetSize:
-                                                      MaterialTapTargetSize
-                                                          .shrinkWrap,
-                                                ),
-                                                MySpacing.width(8),
-                                                MyText.labelMedium(
-                                                    g.name.capitalize!),
-                                              ],
-                                            ),
-                                          ))
-                                      .toList(),
-                                ),
-                                MySpacing.height(20),
-                                _datePicker('Joining Date', controller),
-                                MySpacing.height(20),
-                                _field('Biography', 'Short biography',
-                                    LucideIcons.notepad_text,
-                                    controller.biographyTE),
+                                _numericField('Rating (0-5)', '0.0',
+                                    LucideIcons.star, controller.rateTE,
+                                    decimal: true),
                               ],
                             ),
                           ),
@@ -165,9 +116,7 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           MyContainer(
-                            onTap: controller.saving
-                                ? null
-                                : controller.saveDoctor,
+                            onTap: controller.saving ? null : controller.saveItem,
                             padding: MySpacing.xy(12, 8),
                             color: contentTheme.primary,
                             borderRadiusAll: 8,
@@ -179,7 +128,7 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
                                         strokeWidth: 2,
                                         color: contentTheme.onPrimary),
                                   )
-                                : MyText.labelMedium('Save Doctor',
+                                : MyText.labelMedium('Save Item',
                                     color: contentTheme.onPrimary,
                                     fontWeight: 600),
                           ),
@@ -218,7 +167,6 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             hintText: hint,
-            counterText: '',
             hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
             isCollapsed: true,
             isDense: true,
@@ -232,7 +180,7 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
 
   Widget _numericField(String title, String hint, IconData icon,
       TextEditingController te,
-      {int? length}) {
+      {bool decimal = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -240,48 +188,20 @@ class _DoctorAddScreenState extends State<DoctorAddScreen> with UIMixin {
         MySpacing.height(8),
         TextFormField(
           controller: te,
-          keyboardType: TextInputType.phone,
-          maxLength: length,
+          keyboardType:
+              TextInputType.numberWithOptions(decimal: decimal),
           inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+            FilteringTextInputFormatter.allow(
+                decimal ? RegExp(r'[0-9.]') : RegExp(r'[0-9]')),
           ],
           style: MyTextStyle.bodySmall(),
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             hintText: hint,
-            counterText: '',
             hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
             isCollapsed: true,
             isDense: true,
             prefixIcon: Icon(icon, size: 16),
-            contentPadding: MySpacing.all(16),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _datePicker(String title, DoctorAddController ctrl) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        MyText.labelMedium(title, fontWeight: 600, muted: true),
-        MySpacing.height(8),
-        TextFormField(
-          onTap: ctrl.pickDate,
-          readOnly: true,
-          controller: TextEditingController(
-              text: ctrl.selectedDate != null
-                  ? dateFormatter.format(ctrl.selectedDate!)
-                  : ''),
-          style: MyTextStyle.bodySmall(),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            hintText: 'Select date',
-            hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
-            isCollapsed: true,
-            isDense: true,
-            prefixIcon: const Icon(LucideIcons.calendar, size: 16),
             contentPadding: MySpacing.all(16),
           ),
         ),

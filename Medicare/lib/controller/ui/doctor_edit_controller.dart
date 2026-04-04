@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:medicare/controller/ui/doctor_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
 import 'package:medicare/helpers/widgets/my_text_utils.dart';
 import 'package:medicare/models/doctor_model.dart';
@@ -14,7 +15,8 @@ class DoctorEditController extends MyController {
   MyFormValidator basicValidator = MyFormValidator();
   Gender gender = Gender.male;
   DateTime? selectedDate;
-  List<String> dummyTexts = List.generate(12, (index) => MyTextUtils.getDummyText(60));
+  List<String> dummyTexts =
+      List.generate(12, (index) => MyTextUtils.getDummyText(60));
   bool loading = false;
   bool saving = false;
   String? errorMessage;
@@ -24,7 +26,12 @@ class DoctorEditController extends MyController {
       designationTE, countryTE, postalCodeTE, biographyTE;
 
   DoctorModel? _doctor;
-  String get _doctorId => Get.arguments as String? ?? '';
+
+  // Accept full DoctorModel from nav arguments (preferred), or fall back to string ID.
+  DoctorModel? get _argDoctor =>
+      Get.arguments is DoctorModel ? Get.arguments as DoctorModel : null;
+
+  String get _doctorId => _argDoctor?.id ?? (Get.arguments as String? ?? '');
 
   @override
   void onInit() {
@@ -46,6 +53,13 @@ class DoctorEditController extends MyController {
   }
 
   Future<void> _loadDoctor() async {
+    final arg = _argDoctor;
+    if (arg != null) {
+      _doctor = arg;
+      _populate();
+      return;
+    }
+
     if (_doctorId.isEmpty) return;
     loading = true;
     update();
@@ -76,6 +90,7 @@ class DoctorEditController extends MyController {
     mobileNumberTE.text = d.mobileNumber;
     emailAddressTE.text = d.email;
     designationTE.text  = d.designation;
+    update();
   }
 
   void onChangeGender(Gender? value) {
@@ -102,16 +117,33 @@ class DoctorEditController extends MyController {
     errorMessage = null;
     update();
     try {
-      await FirebaseFirestore.instance.collection('doctors').doc(_doctorId).update({
-        'name': '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim(),
+      await FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(_doctorId)
+          .update({
+        'name':
+            '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim(),
         'email': emailAddressTE.text.trim(),
         'phone': mobileNumberTE.text.trim(),
         'degree': educationTE.text.trim(),
         'specialization': designationTE.text.trim(),
       });
+
+      try { Get.find<DoctorListController>().refreshList(); } catch (_) {}
+
+      Get.snackbar('Success', 'Doctor updated',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
       Get.back();
     } catch (_) {
       errorMessage = 'Failed to save changes.';
+      Get.snackbar('Error', errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     } finally {
       saving = false;
       update();

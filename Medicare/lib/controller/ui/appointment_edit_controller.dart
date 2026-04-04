@@ -1,7 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/controller/ui/appointment_list_controller.dart';
 import 'package:medicare/models/appointment_model.dart';
+import 'package:medicare/models/doctor_model.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 enum Gender { male, female }
@@ -10,6 +14,7 @@ class AppointmentEditController extends MyController {
   Gender gender = Gender.male;
   bool loading = false;
   bool saving = false;
+  bool loadingDoctors = false;
   String? errorMessage;
 
   late TextEditingController firstNameTE, lastNameTE, mobileNumberTE,
@@ -18,10 +23,21 @@ class AppointmentEditController extends MyController {
   DateTime? selectedDate;
   TimeOfDay? fromSelectedTime;
   TimeOfDay? toSelectedTime;
+
+  AppointmentStatus selectedStatus = AppointmentStatus.scheduled;
+  List<DoctorModel> availableDoctors = [];
   String selectedConsultingDoctor = '';
+  String selectedDoctorId = '';
 
   AppointmentModel? _appointment;
-  String get _appointmentId => Get.arguments as String? ?? '';
+
+  // Accept full AppointmentModel from nav arguments.
+  AppointmentModel? get _argAppointment =>
+      Get.arguments is AppointmentModel ? Get.arguments as AppointmentModel : null;
+
+  String get _appointmentId => _argAppointment?.id ?? (Get.arguments as String? ?? '');
+
+  String get _hospitalId => AppAuthController.instance.user?.hospitalId ?? '';
 
   @override
   void onInit() {
@@ -32,22 +48,42 @@ class AppointmentEditController extends MyController {
     addressTE      = TextEditingController();
     treatmentTE    = TextEditingController();
     super.onInit();
+    _loadDoctors();
     _loadAppointment();
   }
 
+  Future<void> _loadDoctors() async {
+    loadingDoctors = true;
+    update();
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('doctors')
+          .where('hospitalId', isEqualTo: _hospitalId)
+          .where('status', isEqualTo: 'active')
+          .limit(50)
+          .get();
+      availableDoctors = snap.docs.map(DoctorModel.fromFirestore).toList();
+    } catch (_) {
+      // Non-fatal
+    } finally {
+      loadingDoctors = false;
+      update();
+    }
+  }
+
   Future<void> _loadAppointment() async {
+    final arg = _argAppointment;
+    if (arg != null) {
+      _appointment = arg;
+      _populate();
+      return;
+    }
+
     if (_appointmentId.isEmpty) {
-      // No ID: pre-fill with defaults for a new edit session
-      selectedDate      = DateTime.now();
-      fromSelectedTime  = const TimeOfDay(hour: 8, minute: 20);
-      toSelectedTime    = const TimeOfDay(hour: 9, minute: 20);
-      firstNameTE.text  = 'Andrea';
-      lastNameTE.text   = 'Buckland';
-      mobileNumberTE.text = '123 345 3454';
-      emailTE.text      = 'andrea@gmail.com';
-      addressTE.text    = 'Akshya Nagar 1st Block 1st Cross, Bangalore-560016';
-      treatmentTE.text  = 'Prostate';
-      selectedConsultingDoctor = 'Bernardo james';
+      // No data: pre-fill with defaults for demo
+      selectedDate     = DateTime.now();
+      fromSelectedTime = const TimeOfDay(hour: 8, minute: 20);
+      toSelectedTime   = const TimeOfDay(hour: 9, minute: 20);
       return;
     }
 
@@ -79,8 +115,11 @@ class AppointmentEditController extends MyController {
     emailTE.text        = a.email;
     treatmentTE.text    = a.treatment;
     selectedConsultingDoctor = a.consultingDoctor;
+    selectedDoctorId    = a.doctorId;
     selectedDate        = a.date;
+    selectedStatus      = a.status;
     fromSelectedTime    = TimeOfDay(hour: a.time.hour, minute: a.time.minute);
+    update();
   }
 
   Future<void> pickDate() async {
@@ -125,12 +164,22 @@ class AppointmentEditController extends MyController {
 
   void onSelectedConsultingDoctor(String value) {
     selectedConsultingDoctor = value;
+    final match = availableDoctors.firstWhere(
+      (d) => d.doctorName == value,
+      orElse: () => availableDoctors.isNotEmpty ? availableDoctors.first : availableDoctors.first,
+    );
+    if (availableDoctors.isNotEmpty) selectedDoctorId = match.id;
+    update();
+  }
+
+  void onSelectedStatus(AppointmentStatus value) {
+    selectedStatus = value;
     update();
   }
 
   Future<void> submit() async {
     if (_appointmentId.isEmpty) {
-      Get.toNamed('/admin/appointment_scheduling');
+      Get.toNamed(AppRoutes.appointmentList);
       return;
     }
 
@@ -146,16 +195,32 @@ class AppointmentEditController extends MyController {
           .collection('appointments')
           .doc(_appointmentId)
           .update({
-        'patientName': '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim(),
+        'patientName':
+            '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim(),
         'patientPhone': mobileNumberTE.text.trim(),
         'patientEmail': emailTE.text.trim(),
+        'doctorId': selectedDoctorId,
         'doctorName': selectedConsultingDoctor,
         'dateTime': Timestamp.fromDate(dt),
+        'status': selectedStatus.name,
         'notes': treatmentTE.text.trim(),
       });
-      Get.toNamed('/admin/appointment_scheduling');
+
+      try { Get.find<AppointmentListController>().refreshList(); } catch (_) {}
+
+      Get.snackbar('Success', 'Appointment updated',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
+      Get.toNamed(AppRoutes.appointmentList);
     } catch (_) {
       errorMessage = 'Failed to save changes.';
+      Get.snackbar('Error', errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     } finally {
       saving = false;
       update();

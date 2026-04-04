@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/controller/ui/patient_list_controller.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 enum Gender { male, female }
@@ -32,14 +34,16 @@ class PatientAddController extends MyController {
   bool saving = false;
   String? errorMessage;
 
-  late TextEditingController nameTE, phoneTE, emailTE, addressTE, medicalHistoryTE;
+  late TextEditingController firstNameTE, lastNameTE, phoneTE, emailTE,
+      addressTE, medicalHistoryTE;
 
   @override
   void onInit() {
-    nameTE = TextEditingController();
-    phoneTE = TextEditingController();
-    emailTE = TextEditingController();
-    addressTE = TextEditingController();
+    firstNameTE     = TextEditingController();
+    lastNameTE      = TextEditingController();
+    phoneTE         = TextEditingController();
+    emailTE         = TextEditingController();
+    addressTE       = TextEditingController();
     medicalHistoryTE = TextEditingController();
     super.onInit();
   }
@@ -68,8 +72,10 @@ class PatientAddController extends MyController {
   }
 
   Future<void> savePatient() async {
-    if (nameTE.text.trim().isEmpty) {
-      errorMessage = 'Name is required.';
+    final name =
+        '${firstNameTE.text.trim()} ${lastNameTE.text.trim()}'.trim();
+    if (name.isEmpty) {
+      errorMessage = 'First name is required.';
       update();
       return;
     }
@@ -83,10 +89,13 @@ class PatientAddController extends MyController {
       final dob = selectedDate ?? DateTime(1990);
       final now = DateTime.now();
       final age = now.year - dob.year -
-          ((now.month < dob.month || (now.month == dob.month && now.day < dob.day)) ? 1 : 0);
+          ((now.month < dob.month ||
+                  (now.month == dob.month && now.day < dob.day))
+              ? 1
+              : 0);
 
       await FirebaseFirestore.instance.collection('patients').add({
-        'name': nameTE.text.trim(),
+        'name': name,
         'gender': gender.name,
         'phone': phoneTE.text.trim(),
         'email': emailTE.text.trim(),
@@ -102,9 +111,21 @@ class PatientAddController extends MyController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      Get.back();
+      try { Get.find<PatientListController>().refreshList(); } catch (_) {}
+
+      Get.snackbar('Success', 'Patient added successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
+      Get.toNamed(AppRoutes.patientList);
     } catch (e) {
       errorMessage = 'Failed to save patient. Please try again.';
+      Get.snackbar('Error', errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     } finally {
       saving = false;
       update();
@@ -113,7 +134,8 @@ class PatientAddController extends MyController {
 
   @override
   void onClose() {
-    nameTE.dispose();
+    firstNameTE.dispose();
+    lastNameTE.dispose();
     phoneTE.dispose();
     emailTE.dispose();
     addressTE.dispose();

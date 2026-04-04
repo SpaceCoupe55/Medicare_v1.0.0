@@ -30,6 +30,7 @@ abstract class AppRoutes {
 
   // Pharmacy
   static const pharmacyList = '/admin/pharmacy/list';
+  static const pharmacyAdd = '/admin/pharmacy/add';
   static const pharmacyDetail = '/admin/pharmacy/detail';
   static const pharmacyCart = '/admin/pharmacy/cart';
   static const pharmacyCheckout = '/admin/pharmacy/checkout';

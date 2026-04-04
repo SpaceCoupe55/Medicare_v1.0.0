@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/patient_model.dart';
@@ -77,9 +78,19 @@ class PatientListController extends MyController {
       await FirebaseFirestore.instance.collection('patients').doc(id).delete();
       patients.removeWhere((p) => p.id == id);
       update();
+      Get.snackbar('Deleted', 'Patient deleted',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3));
     } catch (_) {
       errorMessage = 'Failed to delete patient.';
       update();
+      Get.snackbar('Error', 'Failed to delete patient.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4));
     }
   }
 

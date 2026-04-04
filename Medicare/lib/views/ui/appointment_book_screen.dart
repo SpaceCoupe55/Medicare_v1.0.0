@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:get/get.dart';
 import 'package:medicare/app_constant.dart';
 import 'package:medicare/controller/ui/appointment_book_controller.dart';
 import 'package:medicare/helpers/extention/date_time_extention.dart';
-import 'package:medicare/helpers/theme/app_themes.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb_item.dart';
@@ -14,9 +16,6 @@ import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/helpers/widgets/my_text_style.dart';
 import 'package:medicare/helpers/widgets/responsive.dart';
 import 'package:medicare/views/layout/layout.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
-import 'package:get/get.dart';
 
 class AppointmentBookScreen extends StatefulWidget {
   const AppointmentBookScreen({super.key});
@@ -25,7 +24,8 @@ class AppointmentBookScreen extends StatefulWidget {
   State<AppointmentBookScreen> createState() => _AppointmentBookScreenState();
 }
 
-class _AppointmentBookScreenState extends State<AppointmentBookScreen> with UIMixin {
+class _AppointmentBookScreenState extends State<AppointmentBookScreen>
+    with UIMixin {
   late AppointmentBookController controller;
 
   @override
@@ -49,14 +49,12 @@ class _AppointmentBookScreenState extends State<AppointmentBookScreen> with UIMi
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium(
-                      "Appointment Book",
-                      fontSize: 18,
-                      fontWeight: 600,
-                    ),
+                    MyText.titleMedium('Book Appointment',
+                        fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
-                        MyBreadcrumbItem(name: 'Appointment'),
+                        MyBreadcrumbItem(name: 'Operations'),
+                        MyBreadcrumbItem(name: 'Appointments'),
                         MyBreadcrumbItem(name: 'Book', active: true),
                       ],
                     ),
@@ -72,33 +70,58 @@ class _AppointmentBookScreenState extends State<AppointmentBookScreen> with UIMi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      MyText.bodyMedium("Patient Details", fontWeight: 600),
+                      if (controller.errorMessage != null) ...[
+                        Container(
+                          padding: MySpacing.all(12),
+                          decoration: BoxDecoration(
+                            color: contentTheme.danger.withAlpha(20),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: MyText.bodySmall(controller.errorMessage!,
+                              color: contentTheme.danger),
+                        ),
+                        MySpacing.height(16),
+                      ],
+                      MyText.bodyMedium('Patient Details', fontWeight: 600),
                       MySpacing.height(20),
-                      patientDetails(),
+                      _patientDetails(controller),
                       MySpacing.height(20),
-                      MyText.bodyMedium("Appointment Details", fontWeight: 600),
+                      MyText.bodyMedium('Appointment Details', fontWeight: 600),
                       MySpacing.height(20),
-                      appointmentDetail(),
+                      _appointmentDetail(controller),
                       MySpacing.height(20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           MyButton(
-                              onPressed: controller.submit,
-                              elevation: 0,
-                              borderRadiusAll: 12,
-                              backgroundColor: contentTheme.primary,
-                              child: MyText.labelMedium("Submit", fontWeight: 600, color: contentTheme.onPrimary)),
-                          MySpacing.width(20),
+                            onPressed:
+                                controller.saving ? null : controller.submit,
+                            elevation: 0,
+                            borderRadiusAll: 12,
+                            backgroundColor: contentTheme.primary,
+                            child: controller.saving
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: contentTheme.onPrimary),
+                                  )
+                                : MyText.labelMedium('Book Appointment',
+                                    fontWeight: 600, color: contentTheme.onPrimary),
+                          ),
+                          MySpacing.width(12),
                           MyButton.outlined(
-                              onPressed: () {},
-                              borderRadiusAll: 12,
-                              borderColor: theme.colorScheme.onSurface.withAlpha(80),
-                              backgroundColor: contentTheme.secondary,
-                              elevation: 0,
-                              child: MyText.labelMedium("Cancel", fontWeight: 600))
+                            onPressed: () => Get.back(),
+                            borderRadiusAll: 12,
+                            borderColor:
+                                contentTheme.secondary.withAlpha(80),
+                            backgroundColor: contentTheme.secondary,
+                            elevation: 0,
+                            child: MyText.labelMedium('Cancel', fontWeight: 600),
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -110,188 +133,204 @@ class _AppointmentBookScreenState extends State<AppointmentBookScreen> with UIMi
     );
   }
 
-  Widget patientDetails() {
+  Widget _patientDetails(AppointmentBookController c) {
     return MyFlex(
       contentPadding: false,
       children: [
         MyFlexItem(
-            sizes: 'lg-6 md-6',
-            child: Column(
-              children: [
-                commonTextField(title: "First Name", hintText: "First Name", prefixIcon: Icon(LucideIcons.user_round, size: 16)),
-                MySpacing.height(20),
-                commonTextField(title: "Last Name", hintText: "Last Name", prefixIcon: Icon(LucideIcons.user_round, size: 16)),
-                MySpacing.height(20),
-                commonTextField(title: "Address", hintText: "Address", prefixIcon: Icon(LucideIcons.map_pin, size: 16)),
-              ],
-            )),
+          sizes: 'lg-6 md-6',
+          child: Column(
+            children: [
+              _field('First Name', 'First Name', LucideIcons.user_round,
+                  c.patientNameTE),
+              MySpacing.height(20),
+              _field('Last Name', 'Last Name', LucideIcons.user_round,
+                  c.patientLastNameTE),
+            ],
+          ),
+        ),
         MyFlexItem(
-            sizes: 'lg-6 md-6',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                commonTextField(title: "Mobile Number", hintText: "Mobile Number", prefixIcon: Icon(LucideIcons.phone_call, size: 16)),
-                MySpacing.height(20),
-                commonTextField(title: "Email Address", hintText: "Email Address", prefixIcon: Icon(LucideIcons.mail, size: 16)),
-                MySpacing.height(20),
-                MyText.bodyMedium("Gender", fontWeight: 600),
-                MySpacing.height(8),
-                Wrap(
-                    spacing: 16,
-                    children: Gender.values
-                        .map(
-                          (gender) => InkWell(
-                            onTap: () => controller.onChangeGender(gender),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Radio<Gender>(
-                                  value: gender,
-                                  activeColor: theme.colorScheme.primary,
-                                  groupValue: controller.gender,
-                                  onChanged: (value) => controller.onChangeGender(value),
-                                  visualDensity: getCompactDensity,
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                MySpacing.width(8),
-                                MyText.labelMedium(
-                                  gender.name.capitalize!,
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList())
-              ],
-            )),
+          sizes: 'lg-6 md-6',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _field('Mobile Number', 'Mobile Number', LucideIcons.phone_call,
+                  c.patientPhoneTE),
+              MySpacing.height(20),
+              _field('Email Address', 'Email Address', LucideIcons.mail,
+                  c.patientEmailTE),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget appointmentDetail() {
+  Widget _appointmentDetail(AppointmentBookController c) {
     return MyFlex(contentPadding: false, children: [
       MyFlexItem(
-          sizes: 'lg-4 md-6',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MyText.labelMedium("Date of appointment", fontWeight: 600, muted: true),
-              MySpacing.height(8),
-              TextFormField(
-                onTap: () => controller.pickDate(),
-                style: MyTextStyle.bodySmall(),
-                controller: TextEditingController(text: controller.selectedDate != null ? dateFormatter.format(controller.selectedDate!) : ""),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  hintText: "Date of appointment",
-                  hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
-                  isCollapsed: true,
-                  isDense: true,
-                  prefixIcon: Icon(LucideIcons.calendar),
-                  contentPadding: MySpacing.all(16),
-                ),
+        sizes: 'lg-4 md-6',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MyText.labelMedium('Date of appointment',
+                fontWeight: 600, muted: true),
+            MySpacing.height(8),
+            TextFormField(
+              onTap: c.pickDate,
+              readOnly: true,
+              controller: TextEditingController(
+                  text: c.selectedDate != null
+                      ? dateFormatter.format(c.selectedDate!)
+                      : ''),
+              style: MyTextStyle.bodySmall(),
+              decoration: InputDecoration(
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                hintText: 'Select date',
+                hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
+                isCollapsed: true,
+                isDense: true,
+                prefixIcon: const Icon(LucideIcons.calendar),
+                contentPadding: MySpacing.all(16),
               ),
-            ],
-          )),
+            ),
+          ],
+        ),
+      ),
       MyFlexItem(
-          sizes: 'lg-4 md-6',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MyText.labelMedium("From", fontWeight: 600, muted: true),
-              MySpacing.height(8),
-              TextFormField(
-                onTap: () => controller.fromPickTime(),
-                style: MyTextStyle.bodySmall(),
-                controller: TextEditingController(
-                    text: controller.fromSelectedTime != null ? timeFormatter.format(DateTime.now().applied(controller.fromSelectedTime!)) : ""),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  hintText: "From",
-                  hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
-                  isCollapsed: true,
-                  isDense: true,
-                  prefixIcon: Icon(LucideIcons.clock_3),
-                  contentPadding: MySpacing.all(16),
-                ),
+        sizes: 'lg-4 md-6',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MyText.labelMedium('From', fontWeight: 600, muted: true),
+            MySpacing.height(8),
+            TextFormField(
+              onTap: c.fromPickTime,
+              readOnly: true,
+              controller: TextEditingController(
+                  text: c.fromSelectedTime != null
+                      ? timeFormatter
+                          .format(DateTime.now().applied(c.fromSelectedTime!))
+                      : ''),
+              style: MyTextStyle.bodySmall(),
+              decoration: InputDecoration(
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                hintText: 'From',
+                hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
+                isCollapsed: true,
+                isDense: true,
+                prefixIcon: const Icon(LucideIcons.clock_3),
+                contentPadding: MySpacing.all(16),
               ),
-            ],
-          )),
+            ),
+          ],
+        ),
+      ),
       MyFlexItem(
-          sizes: 'lg-4 md-6',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MyText.labelMedium("To", fontWeight: 600, muted: true),
-              MySpacing.height(8),
-              TextFormField(
-                onTap: () => controller.toPickTime(),
-                style: MyTextStyle.bodySmall(),
-                controller: TextEditingController(
-                    text: controller.toSelectedTime != null ? timeFormatter.format(DateTime.now().applied(controller.toSelectedTime!)) : ""),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  hintText: "To",
-                  hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
-                  isCollapsed: true,
-                  isDense: true,
-                  prefixIcon: Icon(LucideIcons.calendar),
-                  contentPadding: MySpacing.all(16),
-                ),
+        sizes: 'lg-4 md-6',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MyText.labelMedium('To', fontWeight: 600, muted: true),
+            MySpacing.height(8),
+            TextFormField(
+              onTap: c.toPickTime,
+              readOnly: true,
+              controller: TextEditingController(
+                  text: c.toSelectedTime != null
+                      ? timeFormatter
+                          .format(DateTime.now().applied(c.toSelectedTime!))
+                      : ''),
+              style: MyTextStyle.bodySmall(),
+              decoration: InputDecoration(
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                hintText: 'To',
+                hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
+                isCollapsed: true,
+                isDense: true,
+                prefixIcon: const Icon(LucideIcons.clock_3),
+                contentPadding: MySpacing.all(16),
               ),
-            ],
-          )),
+            ),
+          ],
+        ),
+      ),
       MyFlexItem(
         sizes: 'lg-6 md-6',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            MyText.labelMedium("Consulting Doctor", fontWeight: 600, muted: true),
+            MyText.labelMedium('Consulting Doctor',
+                fontWeight: 600, muted: true),
             MySpacing.height(8),
-            DropdownButtonFormField<String>(
-              value: controller.selectedConsultingDoctor,
-              decoration: InputDecoration(
-                  hintText: "Blood Group",
-                  hintStyle: MyTextStyle.bodySmall(xMuted: true),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: MySpacing.all(12),
-                  isCollapsed: true,
-                  isDense: true,
-                  prefixIcon: Icon(LucideIcons.user_plus, size: 16),
-                  floatingLabelBehavior: FloatingLabelBehavior.never),
-              dropdownColor: theme.cardTheme.color,
-              onChanged: (value) => controller.onSelectedConsultingDoctor(value!),
-              items: ["Bernardo james", "Andrea Lalema", "William Stephin"].map((doctor) {
-                return DropdownMenuItem<String>(
-                  value: doctor,
-                  child: MyText.bodySmall(doctor, fontWeight: 600),
-                );
-              }).toList(),
-            )
+            c.loadingDoctors
+                ? const SizedBox(
+                    height: 48,
+                    child: Center(
+                        child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2))))
+                : c.availableDoctors.isEmpty
+                    ? MyText.bodySmall('No doctors available',
+                        muted: true)
+                    : DropdownButtonFormField<String>(
+                        value: c.selectedConsultingDoctor.isNotEmpty
+                            ? c.selectedConsultingDoctor
+                            : null,
+                        decoration: InputDecoration(
+                          hintText: 'Select doctor',
+                          hintStyle: MyTextStyle.bodySmall(xMuted: true),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          contentPadding: MySpacing.all(12),
+                          isCollapsed: true,
+                          isDense: true,
+                          prefixIcon:
+                              const Icon(LucideIcons.user_plus, size: 16),
+                          floatingLabelBehavior: FloatingLabelBehavior.never,
+                        ),
+                        dropdownColor: contentTheme.background,
+                        onChanged: (v) => c.onSelectedConsultingDoctor(v!),
+                        items: c.availableDoctors
+                            .map((d) => DropdownMenuItem<String>(
+                                  value: d.doctorName,
+                                  child: MyText.bodySmall(d.doctorName,
+                                      fontWeight: 600),
+                                ))
+                            .toList(),
+                      ),
           ],
         ),
       ),
       MyFlexItem(
-          sizes: 'lg-6 md-6',
-          child: commonTextField(title: "Treatment", hintText: "Treatment detail", prefixIcon: Icon(LucideIcons.heart_pulse, size: 16))),
+        sizes: 'lg-6 md-6',
+        child: _field('Notes / Treatment', 'Treatment detail',
+            LucideIcons.heart_pulse, c.notesTE),
+      ),
     ]);
   }
 
-  Widget commonTextField({String? title, String? hintText, Widget? prefixIcon}) {
+  Widget _field(String title, String hint, IconData icon,
+      TextEditingController te) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        MyText.labelMedium(title ?? "", fontWeight: 600, muted: true),
+        MyText.labelMedium(title, fontWeight: 600, muted: true),
         MySpacing.height(8),
-        TextField(
+        TextFormField(
+          controller: te,
           style: MyTextStyle.bodySmall(),
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            hintText: hintText,
+            hintText: hint,
             hintStyle: MyTextStyle.bodySmall(fontWeight: 600, muted: true),
             isCollapsed: true,
             isDense: true,
-            prefixIcon: prefixIcon,
+            prefixIcon: Icon(icon, size: 16),
             contentPadding: MySpacing.all(16),
           ),
         ),

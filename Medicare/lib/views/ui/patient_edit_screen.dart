@@ -179,19 +179,28 @@ class _PatientEditScreenState extends State<PatientEditScreen> with UIMixin {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           MyContainer(
-                            onTap: () {},
+                            onTap: controller.saving ? null : controller.saveChanges,
                             padding: MySpacing.xy(12, 8),
                             color: contentTheme.primary,
                             borderRadiusAll: 8,
-                            child: MyText.labelMedium("Submit", color: contentTheme.onPrimary, fontWeight: 600),
+                            child: controller.saving
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: contentTheme.onPrimary),
+                                  )
+                                : MyText.labelMedium("Save Changes",
+                                    color: contentTheme.onPrimary, fontWeight: 600),
                           ),
-                          MySpacing.width(20),
+                          MySpacing.width(12),
                           MyContainer(
-                            onTap: () {},
+                            onTap: () => Get.back(),
                             padding: MySpacing.xy(12, 8),
                             borderRadiusAll: 8,
                             color: contentTheme.secondary.withAlpha(32),
-                            child: MyText.labelMedium("Cancel", color: contentTheme.secondary, fontWeight: 600),
+                            child: MyText.labelMedium("Cancel",
+                                color: contentTheme.secondary, fontWeight: 600),
                           ),
                         ],
                       )

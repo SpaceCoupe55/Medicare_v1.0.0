@@ -151,12 +151,23 @@ class _PatientListScreenState extends State<PatientListScreen> with UIMixin {
                                             color: contentTheme.secondary.withAlpha(32),
                                             child: Icon(LucideIcons.eye, size: 16),
                                           ),
-                                          MySpacing.width(12),
+                                          MySpacing.width(8),
                                           MyContainer(
                                             onTap: () => controller.goEditScreen(data),
                                             paddingAll: 8,
                                             color: contentTheme.secondary.withAlpha(32),
                                             child: Icon(LucideIcons.pencil, size: 16),
+                                          ),
+                                          MySpacing.width(8),
+                                          MyContainer(
+                                            onTap: () => _confirmDelete(
+                                                context,
+                                                'Delete patient "${data.name}"?',
+                                                () => controller.deletePatient(data.id)),
+                                            paddingAll: 8,
+                                            color: contentTheme.danger.withAlpha(30),
+                                            child: Icon(LucideIcons.trash_2,
+                                                size: 16, color: contentTheme.danger),
                                           ),
                                         ],
                                       )),
@@ -184,6 +195,28 @@ class _PatientListScreenState extends State<PatientListScreen> with UIMixin {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _confirmDelete(
+      BuildContext context, String message, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              onConfirm();
+            },
+            child: Text('Delete',
+                style: TextStyle(color: contentTheme.danger)),
+          ),
+        ],
       ),
     );
   }

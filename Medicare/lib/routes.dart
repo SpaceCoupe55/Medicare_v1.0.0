@@ -26,6 +26,7 @@ import 'package:medicare/views/ui/patient_add_screen.dart';
 import 'package:medicare/views/ui/patient_detail_screen.dart';
 import 'package:medicare/views/ui/patient_edit_screen.dart';
 import 'package:medicare/views/ui/patient_list_screen.dart';
+import 'package:medicare/views/ui/pharmacy_add_screen.dart';
 import 'package:medicare/views/ui/pharmacy_cart_screen.dart';
 import 'package:medicare/views/ui/pharmacy_checkout_screen.dart';
 import 'package:medicare/views/ui/pharmacy_detail_screen.dart';
@@ -167,6 +168,11 @@ List<GetPage> getPageRoute() {
     GetPage(
       name: AppRoutes.pharmacyList,
       page: () => const PharmacyListScreen(),
+      middlewares: _pharmacyStaff(),
+    ),
+    GetPage(
+      name: AppRoutes.pharmacyAdd,
+      page: () => const PharmacyAddScreen(),
       middlewares: _pharmacyStaff(),
     ),
     GetPage(

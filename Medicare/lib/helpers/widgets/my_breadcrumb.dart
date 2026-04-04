@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:get/get.dart';
 import 'package:medicare/helpers/theme/app_themes.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb_item.dart';
 import 'package:medicare/helpers/widgets/my_constant.dart';
 import 'package:medicare/helpers/widgets/my_responsiv.dart';
-import 'package:medicare/helpers/widgets/my_router.dart';
 import 'package:medicare/helpers/widgets/my_spacing.dart';
 import 'package:medicare/helpers/widgets/my_text.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 class MyBreadcrumb extends StatelessWidget {
   final List<MyBreadcrumbItem> children;
@@ -34,7 +34,7 @@ class MyBreadcrumb extends StatelessWidget {
         list.add(InkWell(
             onTap: () => {
                   if (item.route != null)
-                    MyRouter.pushReplacementNamed(context, item.route!)
+                    Get.toNamed(item.route!)
                 },
             child: MyText.labelMedium(
               children[i].name,

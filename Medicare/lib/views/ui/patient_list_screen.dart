@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:get/get.dart';
 import 'package:medicare/controller/ui/patient_list_controller.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/utils/utils.dart';
@@ -10,9 +13,6 @@ import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/helpers/widgets/responsive.dart';
 import 'package:medicare/images.dart';
 import 'package:medicare/views/layout/layout.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
-import 'package:get/get.dart';
 
 class PatientListScreen extends StatefulWidget {
   const PatientListScreen({super.key});
@@ -23,6 +23,7 @@ class PatientListScreen extends StatefulWidget {
 
 class _PatientListScreenState extends State<PatientListScreen> with UIMixin {
   PatientListController controller = Get.put(PatientListController());
+
   @override
   Widget build(BuildContext context) {
     return Layout(
@@ -38,15 +39,11 @@ class _PatientListScreenState extends State<PatientListScreen> with UIMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium(
-                      "Patient List",
-                      fontSize: 18,
-                      fontWeight: 600,
-                    ),
+                    MyText.titleMedium("Patients", fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
-                        MyBreadcrumbItem(name: 'Admin'),
-                        MyBreadcrumbItem(name: 'Patient List', active: true),
+                        MyBreadcrumbItem(name: 'People'),
+                        MyBreadcrumbItem(name: 'Patients', active: true),
                       ],
                     ),
                   ],
@@ -62,7 +59,6 @@ class _PatientListScreenState extends State<PatientListScreen> with UIMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           MyText.bodyMedium("Patient List", fontWeight: 600, muted: true),
@@ -71,87 +67,171 @@ class _PatientListScreenState extends State<PatientListScreen> with UIMixin {
                             padding: MySpacing.xy(12, 8),
                             borderRadiusAll: 8,
                             color: contentTheme.primary,
-                            child: MyText.labelSmall("Add Patient", fontWeight: 600, color: contentTheme.onPrimary),
-                          )
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.user_plus, size: 14, color: contentTheme.onPrimary),
+                                MySpacing.width(6),
+                                MyText.labelSmall("Add Patient", fontWeight: 600, color: contentTheme.onPrimary),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       MySpacing.height(20),
-                      if (controller.patients.isNotEmpty)
+                      if (controller.loading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (controller.errorMessage != null)
+                        _errorState(controller.errorMessage!, controller.refreshList)
+                      else if (controller.patients.isEmpty)
+                        _emptyState()
+                      else ...[
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
-                              sortAscending: true,
-                              columnSpacing: 60,
-                              onSelectAll: (_) => {},
-                              headingRowColor: WidgetStatePropertyAll(contentTheme.primary.withAlpha(40)),
-                              dataRowMaxHeight: 60,
-                              showBottomBorder: true,
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
-                              border: TableBorder.all(
-                                  borderRadius: BorderRadius.circular(12), style: BorderStyle.solid, width: .4, color: contentTheme.secondary),
-                              columns: [
-                                DataColumn(label: MyText.labelMedium('Name', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Sex', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Address', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Mobile Number', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Birth Date', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Age', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Blood Group', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Status', color: contentTheme.primary)),
-                                DataColumn(label: MyText.labelMedium('Action', color: contentTheme.primary)),
-                              ],
-                              rows: controller.patients
-                                  .mapIndexed((index, data) => DataRow(cells: [
-                                        DataCell(SizedBox(
-                                          width: 200,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              MyContainer.rounded(
-                                                paddingAll: 0,
-                                                height: 32,
-                                                width: 32,
-                                                child: Image.asset(Images.avatars[index % Images.avatars.length], fit: BoxFit.cover),
-                                              ),
-                                              MySpacing.width(16),
-                                              MyText.bodySmall(data.name),
-                                            ],
-                                          ),
-                                        )),
-                                        DataCell(MyText.bodySmall(data.gender)),
-                                        DataCell(SizedBox(width: 250, child: MyText.bodySmall(data.address))),
-                                        DataCell(SizedBox(width: 100, child: MyText.bodySmall(data.mobileNumber))),
-                                        DataCell(SizedBox(width: 100, child: MyText.bodySmall(Utils.getDateStringFromDateTime(data.birthDate)))),
-                                        DataCell(MyText.bodySmall('${data.age}')),
-                                        DataCell(MyText.bodySmall(data.bloodGroup)),
-                                        DataCell(SizedBox(width: 100, child: MyText.bodySmall(data.status))),
-                                        DataCell(Row(
+                            sortAscending: true,
+                            columnSpacing: 60,
+                            onSelectAll: (_) => {},
+                            headingRowColor: WidgetStatePropertyAll(contentTheme.primary.withAlpha(40)),
+                            dataRowMaxHeight: 60,
+                            showBottomBorder: true,
+                            clipBehavior: Clip.antiAliasWithSaveLayer,
+                            border: TableBorder.all(
+                              borderRadius: BorderRadius.circular(12),
+                              style: BorderStyle.solid,
+                              width: .4,
+                              color: contentTheme.secondary,
+                            ),
+                            columns: [
+                              DataColumn(label: MyText.labelMedium('Name', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Sex', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Address', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Mobile Number', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Birth Date', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Age', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Blood Group', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Status', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelMedium('Action', color: contentTheme.primary)),
+                            ],
+                            rows: controller.patients
+                                .mapIndexed((index, data) => DataRow(cells: [
+                                      DataCell(SizedBox(
+                                        width: 200,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            MyContainer(
-                                              onTap: controller.goDetailScreen,
-                                              paddingAll: 8,
-                                              color: contentTheme.secondary.withAlpha(32),
-                                              child: Icon(LucideIcons.eye, size: 16),
+                                            MyContainer.rounded(
+                                              paddingAll: 0,
+                                              height: 32,
+                                              width: 32,
+                                              child: Image.asset(Images.avatars[index % Images.avatars.length], fit: BoxFit.cover),
                                             ),
-                                            MySpacing.width(20),
-                                            MyContainer(
-                                              onTap: controller.goEditScreen,
-                                              paddingAll: 8,
-                                              color: contentTheme.secondary.withAlpha(32),
-                                              child: Icon(LucideIcons.pencil, size: 16),
-                                            ),
+                                            MySpacing.width(16),
+                                            Flexible(child: MyText.bodySmall(data.name, overflow: TextOverflow.ellipsis)),
                                           ],
-                                        )),
-                                      ]))
-                                  .toList()),
+                                        ),
+                                      )),
+                                      DataCell(MyText.bodySmall(data.gender)),
+                                      DataCell(SizedBox(width: 200, child: MyText.bodySmall(data.address, overflow: TextOverflow.ellipsis))),
+                                      DataCell(SizedBox(width: 120, child: MyText.bodySmall(data.mobileNumber))),
+                                      DataCell(SizedBox(width: 100, child: MyText.bodySmall(Utils.getDateStringFromDateTime(data.birthDate)))),
+                                      DataCell(MyText.bodySmall('${data.age}')),
+                                      DataCell(MyText.bodySmall(data.bloodGroup)),
+                                      DataCell(SizedBox(width: 80, child: MyText.bodySmall(data.status))),
+                                      DataCell(Row(
+                                        children: [
+                                          MyContainer(
+                                            onTap: () => controller.goDetailScreen(data),
+                                            paddingAll: 8,
+                                            color: contentTheme.secondary.withAlpha(32),
+                                            child: Icon(LucideIcons.eye, size: 16),
+                                          ),
+                                          MySpacing.width(12),
+                                          MyContainer(
+                                            onTap: () => controller.goEditScreen(data),
+                                            paddingAll: 8,
+                                            color: contentTheme.secondary.withAlpha(32),
+                                            child: Icon(LucideIcons.pencil, size: 16),
+                                          ),
+                                        ],
+                                      )),
+                                    ]))
+                                .toList(),
+                          ),
                         ),
+                        if (controller.hasMore)
+                          Padding(
+                            padding: MySpacing.y(16),
+                            child: Center(
+                              child: controller.loadingMore
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : TextButton(
+                                      onPressed: controller.loadMore,
+                                      child: MyText.bodyMedium("Load more", color: contentTheme.primary),
+                                    ),
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),
-              )
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Padding(
+        padding: MySpacing.y(48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.inbox, size: 48, color: contentTheme.secondary.withAlpha(100)),
+            MySpacing.height(12),
+            MyText.bodyMedium("No patients yet", muted: true),
+            MySpacing.height(12),
+            MyContainer(
+              onTap: controller.addPatient,
+              borderRadiusAll: 8,
+              color: contentTheme.primary.withAlpha(20),
+              padding: MySpacing.xy(16, 10),
+              child: MyText.bodyMedium("Add First Patient", color: contentTheme.primary, fontWeight: 600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorState(String message, VoidCallback onRetry) {
+    return Center(
+      child: Padding(
+        padding: MySpacing.y(48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.circle_alert, size: 48, color: contentTheme.danger),
+            MySpacing.height(12),
+            MyText.bodyMedium(message, muted: true, textAlign: TextAlign.center),
+            MySpacing.height(12),
+            MyContainer(
+              onTap: onRetry,
+              borderRadiusAll: 8,
+              color: contentTheme.primary.withAlpha(20),
+              padding: MySpacing.xy(16, 10),
+              child: MyText.bodyMedium("Retry", color: contentTheme.primary, fontWeight: 600),
+            ),
+          ],
+        ),
       ),
     );
   }

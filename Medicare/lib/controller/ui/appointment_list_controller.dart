@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/appointment_model.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 class AppointmentListController extends MyController {
@@ -83,14 +84,14 @@ class AppointmentListController extends MyController {
   }
 
   void bookAppointment() {
-    Get.toNamed('/admin/appointment_book');
+    Get.toNamed(AppRoutes.appointmentBook);
   }
 
-  void goToSchedulingEditScreen() {
-    Get.toNamed('/admin/appointment_edit');
+  void goToSchedulingEditScreen(AppointmentModel appointment) {
+    Get.toNamed(AppRoutes.appointmentEdit, arguments: appointment);
   }
 
   void goToSchedulingScreen() {
-    Get.toNamed('/admin/appointment_scheduling');
+    Get.toNamed(AppRoutes.appointmentSchedule);
   }
 }

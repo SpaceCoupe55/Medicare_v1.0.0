@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/helpers/chart_data.dart';
+import 'package:medicare/models/user_model.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
+import 'package:get/get.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class DashboardController extends MyController with UIMixin {
@@ -16,13 +19,16 @@ class DashboardController extends MyController with UIMixin {
   int totalAppointments = 0;
   int totalAppointmentsToday = 0;
 
-  // Recent appointments for the dashboard table
-  List<Map<String, dynamic>> appointment = [];
+  // Recent appointments (last 5)
+  List<Map<String, dynamic>> recentAppointments = [];
 
   // Top doctors for the sidebar widget
   List<Map<String, dynamic>> topDoctors = [];
 
   bool loading = false;
+
+  bool get isAdmin =>
+      AppAuthController.instance.user?.role == UserRole.admin;
 
   String get _hospitalId => AppAuthController.instance.user?.hospitalId ?? '';
 
@@ -33,7 +39,6 @@ class DashboardController extends MyController with UIMixin {
     _loadDashboardData();
   }
 
-  /// Seed charts with zeros so the UI renders immediately before Firestore data arrives.
   void _initChartData() {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -100,15 +105,14 @@ class DashboardController extends MyController with UIMixin {
         db.collection('doctors').where('hospitalId', isEqualTo: hid).limit(5).get(),
       ]);
 
-      // ── Aggregate counts ─────────────────────────────────────────────────
       totalPatients          = (results[0] as AggregateQuerySnapshot).count ?? 0;
       totalDoctors           = (results[1] as AggregateQuerySnapshot).count ?? 0;
       totalAppointments      = (results[2] as AggregateQuerySnapshot).count ?? 0;
       totalAppointmentsToday = (results[3] as AggregateQuerySnapshot).count ?? 0;
 
-      // ── Recent appointments table ─────────────────────────────────────────
+      // Recent appointments
       final recentSnap = results[4] as QuerySnapshot<Map<String, dynamic>>;
-      appointment = recentSnap.docs.map((doc) {
+      recentAppointments = recentSnap.docs.map((doc) {
         final d = doc.data();
         final dt = (d['dateTime'] as Timestamp?)?.toDate() ?? DateTime.now();
         return {
@@ -118,10 +122,11 @@ class DashboardController extends MyController with UIMixin {
           'appointment_for': d['doctorName'] ?? '',
           'date': dt,
           'time': dt,
+          'status': d['status'] ?? 'scheduled',
         };
       }).toList();
 
-      // ── Monthly appointment chart (scheduled vs completed) ────────────────
+      // Monthly appointment chart (scheduled vs completed)
       final apptSnap = results[5] as QuerySnapshot<Map<String, dynamic>>;
       final scheduledByMonth = List.filled(12, 0);
       final completedByMonth = List.filled(12, 0);
@@ -137,7 +142,7 @@ class DashboardController extends MyController with UIMixin {
         }
       }
 
-      // ── Monthly patient registrations by gender ────────────────────────────
+      // Monthly patient registrations by gender
       final patientSnap = results[6] as QuerySnapshot<Map<String, dynamic>>;
       final maleByMonth   = List.filled(12, 0);
       final femaleByMonth = List.filled(12, 0);
@@ -174,7 +179,7 @@ class DashboardController extends MyController with UIMixin {
         ),
       );
 
-      // ── Top doctors list ──────────────────────────────────────────────────
+      // Top doctors list
       final docSnap = results[7] as QuerySnapshot<Map<String, dynamic>>;
       topDoctors = docSnap.docs.map((doc) {
         final d = doc.data();
@@ -190,6 +195,20 @@ class DashboardController extends MyController with UIMixin {
       update();
     }
   }
+
+  // ── Navigation ──────────────────────────────────────────────────────────────
+
+  void goToPatients() => Get.toNamed(AppRoutes.patientList);
+  void goToDoctors() => Get.toNamed(AppRoutes.doctorList);
+  void goToAppointments() => Get.toNamed(AppRoutes.appointmentList);
+  void goToAddPatient() => Get.toNamed(AppRoutes.patientAdd);
+  void goToBookAppointment() => Get.toNamed(AppRoutes.appointmentBook);
+  void goToAddDoctor() => Get.toNamed(AppRoutes.doctorAdd);
+  void goToReports() => Get.toNamed(AppRoutes.reports);
+  void goToAppointmentDetail(String id) =>
+      Get.toNamed(AppRoutes.appointmentEdit, arguments: {'id': id});
+
+  // ── Chart series ────────────────────────────────────────────────────────────
 
   List<SplineSeries<ChartSampleData, String>> treatmentTypeChart() {
     return <SplineSeries<ChartSampleData, String>>[
@@ -234,28 +253,4 @@ class DashboardController extends MyController with UIMixin {
       ),
     ];
   }
-}
-
-class ChartSampleData {
-  ChartSampleData({
-    this.x, this.y, this.xValue, this.yValue,
-    this.secondSeriesYValue, this.thirdSeriesYValue,
-    this.pointColor, this.size, this.text,
-    this.open, this.close, this.low, this.high, this.volume,
-  });
-
-  final dynamic x;
-  final num? y;
-  final dynamic xValue;
-  final num? yValue;
-  final num? secondSeriesYValue;
-  final num? thirdSeriesYValue;
-  final Color? pointColor;
-  final num? size;
-  final String? text;
-  final num? open;
-  final num? close;
-  final num? low;
-  final num? high;
-  final num? volume;
 }

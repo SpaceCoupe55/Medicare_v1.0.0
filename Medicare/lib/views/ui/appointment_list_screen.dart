@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:get/get.dart';
 import 'package:medicare/controller/ui/appointment_list_controller.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/utils/utils.dart';
@@ -11,8 +13,6 @@ import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/helpers/widgets/responsive.dart';
 import 'package:medicare/images.dart';
 import 'package:medicare/views/layout/layout.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class AppointmentListScreen extends StatefulWidget {
   const AppointmentListScreen({super.key});
@@ -39,15 +39,11 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> with UIMi
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium(
-                      "Appointment List",
-                      fontSize: 18,
-                      fontWeight: 600,
-                    ),
+                    MyText.titleMedium("Appointments", fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
-                        MyBreadcrumbItem(name: 'Admin'),
-                        MyBreadcrumbItem(name: 'Appointment List', active: true),
+                        MyBreadcrumbItem(name: 'Operations'),
+                        MyBreadcrumbItem(name: 'Appointments', active: true),
                       ],
                     ),
                   ],
@@ -64,22 +60,59 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> with UIMi
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          MyText.titleMedium("Appointments", fontWeight: 600),
-                          MyContainer(
-                            onTap: controller.bookAppointment,
-                            padding: MySpacing.xy(12, 8),
-                            borderRadiusAll: 8,
-                            color: contentTheme.primary,
-                            child: MyText.labelSmall("Add Appointment", fontWeight: 600, color: contentTheme.onPrimary),
-                          )
+                          MyText.titleMedium("Appointment List", fontWeight: 600),
+                          Row(
+                            children: [
+                              MyContainer(
+                                onTap: controller.goToSchedulingScreen,
+                                padding: MySpacing.xy(12, 8),
+                                borderRadiusAll: 8,
+                                color: contentTheme.primary.withAlpha(20),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(LucideIcons.calendar_days, size: 14, color: contentTheme.primary),
+                                    MySpacing.width(6),
+                                    MyText.labelSmall("Schedule View", fontWeight: 600, color: contentTheme.primary),
+                                  ],
+                                ),
+                              ),
+                              MySpacing.width(12),
+                              MyContainer(
+                                onTap: controller.bookAppointment,
+                                padding: MySpacing.xy(12, 8),
+                                borderRadiusAll: 8,
+                                color: contentTheme.primary,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(LucideIcons.calendar_plus, size: 14, color: contentTheme.onPrimary),
+                                    MySpacing.width(6),
+                                    MyText.labelSmall("Book New", fontWeight: 600, color: contentTheme.onPrimary),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                       MySpacing.height(20),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
+                      if (controller.loading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (controller.errorMessage != null)
+                        _errorState(controller.errorMessage!, controller.refreshList)
+                      else if (controller.appointmentListModel.isEmpty)
+                        _emptyState()
+                      else ...[
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
                             sortAscending: true,
                             columnSpacing: 60,
                             onSelectAll: (_) => {},
@@ -88,21 +121,25 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> with UIMi
                             showBottomBorder: true,
                             clipBehavior: Clip.antiAliasWithSaveLayer,
                             border: TableBorder.all(
-                                borderRadius: BorderRadius.circular(12), style: BorderStyle.solid, width: .4, color: contentTheme.secondary),
+                              borderRadius: BorderRadius.circular(12),
+                              style: BorderStyle.solid,
+                              width: .4,
+                              color: contentTheme.secondary,
+                            ),
                             columns: [
-                              DataColumn(label: MyText.labelLarge('Name', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelLarge('Patient', color: contentTheme.primary)),
                               DataColumn(label: MyText.labelLarge('Consulting Doctor', color: contentTheme.primary)),
                               DataColumn(label: MyText.labelLarge('Treatment', color: contentTheme.primary)),
                               DataColumn(label: MyText.labelLarge('Mobile', color: contentTheme.primary)),
-                              DataColumn(label: MyText.labelLarge('Email', color: contentTheme.primary)),
                               DataColumn(label: MyText.labelLarge('Date', color: contentTheme.primary)),
                               DataColumn(label: MyText.labelLarge('Time', color: contentTheme.primary)),
+                              DataColumn(label: MyText.labelLarge('Status', color: contentTheme.primary)),
                               DataColumn(label: MyText.labelLarge('Action', color: contentTheme.primary)),
                             ],
                             rows: controller.appointmentListModel
                                 .mapIndexed((index, data) => DataRow(cells: [
                                       DataCell(SizedBox(
-                                        width: 250,
+                                        width: 200,
                                         child: Row(
                                           children: [
                                             MyContainer.rounded(
@@ -113,27 +150,27 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> with UIMi
                                               child: Image.asset(Images.avatars[index % Images.avatars.length], fit: BoxFit.cover),
                                             ),
                                             MySpacing.width(12),
-                                            MyText.labelLarge(data.name),
+                                            Flexible(child: MyText.labelLarge(data.name, overflow: TextOverflow.ellipsis)),
                                           ],
                                         ),
                                       )),
                                       DataCell(SizedBox(width: 150, child: MyText.bodySmall('Dr. ${data.consultingDoctor}', fontWeight: 600))),
                                       DataCell(MyText.bodySmall(data.treatment, fontWeight: 600)),
                                       DataCell(MyText.bodySmall(data.mobile, fontWeight: 600)),
-                                      DataCell(SizedBox(width: 250, child: MyText.bodySmall(data.email, fontWeight: 600))),
                                       DataCell(MyText.bodySmall(Utils.getDateStringFromDateTime(data.date, showMonthShort: true), fontWeight: 600)),
                                       DataCell(MyText.bodySmall(Utils.getTimeStringFromDateTime(data.time, showSecond: false), fontWeight: 600)),
+                                      DataCell(_statusChip(data.status.name)),
                                       DataCell(Row(
                                         children: [
                                           MyContainer(
-                                            onTap: controller.goToSchedulingScreen,
+                                            onTap: () => controller.goToSchedulingScreen(),
                                             paddingAll: 8,
                                             color: contentTheme.secondary.withAlpha(32),
                                             child: Icon(LucideIcons.eye, size: 16),
                                           ),
-                                          MySpacing.width(20),
+                                          MySpacing.width(12),
                                           MyContainer(
-                                            onTap: controller.goToSchedulingEditScreen,
+                                            onTap: () => controller.goToSchedulingEditScreen(data),
                                             paddingAll: 8,
                                             color: contentTheme.secondary.withAlpha(32),
                                             child: Icon(LucideIcons.pencil, size: 16),
@@ -141,8 +178,22 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> with UIMi
                                         ],
                                       )),
                                     ]))
-                                .toList()),
-                      ),
+                                .toList(),
+                          ),
+                        ),
+                        if (controller.hasMore)
+                          Padding(
+                            padding: MySpacing.y(16),
+                            child: Center(
+                              child: controller.loadingMore
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : TextButton(
+                                      onPressed: controller.loadMore,
+                                      child: MyText.bodyMedium("Load more", color: contentTheme.primary),
+                                    ),
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),
@@ -150,6 +201,78 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> with UIMi
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _statusChip(String status) {
+    Color color;
+    switch (status.toLowerCase()) {
+      case 'completed':
+        color = contentTheme.success;
+        break;
+      case 'cancelled':
+        color = contentTheme.danger;
+        break;
+      default:
+        color = contentTheme.primary;
+    }
+    return MyContainer(
+      borderRadiusAll: 4,
+      color: color.withAlpha(30),
+      padding: MySpacing.xy(8, 4),
+      child: MyText.bodySmall(
+        status.isNotEmpty ? status[0].toUpperCase() + status.substring(1) : '',
+        color: color,
+        fontWeight: 600,
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Padding(
+        padding: MySpacing.y(48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.calendar_off, size: 48, color: contentTheme.secondary.withAlpha(100)),
+            MySpacing.height(12),
+            MyText.bodyMedium("No appointments yet", muted: true),
+            MySpacing.height(12),
+            MyContainer(
+              onTap: controller.bookAppointment,
+              borderRadiusAll: 8,
+              color: contentTheme.primary.withAlpha(20),
+              padding: MySpacing.xy(16, 10),
+              child: MyText.bodyMedium("Book First Appointment", color: contentTheme.primary, fontWeight: 600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorState(String message, VoidCallback onRetry) {
+    return Center(
+      child: Padding(
+        padding: MySpacing.y(48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.circle_alert, size: 48, color: contentTheme.danger),
+            MySpacing.height(12),
+            MyText.bodyMedium(message, muted: true, textAlign: TextAlign.center),
+            MySpacing.height(12),
+            MyContainer(
+              onTap: onRetry,
+              borderRadiusAll: 8,
+              color: contentTheme.primary.withAlpha(20),
+              padding: MySpacing.xy(16, 10),
+              child: MyText.bodyMedium("Retry", color: contentTheme.primary, fontWeight: 600),
+            ),
+          ],
+        ),
       ),
     );
   }

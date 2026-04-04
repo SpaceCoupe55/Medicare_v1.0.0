@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/doctor_model.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 class DoctorListController extends MyController {
@@ -82,15 +83,15 @@ class DoctorListController extends MyController {
     }
   }
 
-  void goEditDoctorScreen() {
-    Get.toNamed('/admin/doctor/edit');
+  void goDetailDoctorScreen(DoctorModel doctor) {
+    Get.toNamed(AppRoutes.doctorDetail, arguments: doctor);
   }
 
-  void goDetailDoctorScreen() {
-    Get.toNamed('/admin/doctor/detail');
+  void goEditDoctorScreen(DoctorModel doctor) {
+    Get.toNamed(AppRoutes.doctorEdit, arguments: doctor);
   }
 
   void addDoctor() {
-    Get.toNamed('/admin/doctor/add');
+    Get.toNamed(AppRoutes.doctorAdd);
   }
 }

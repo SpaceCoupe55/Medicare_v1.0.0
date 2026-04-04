@@ -22,6 +22,8 @@ class UserModel {
   final String name;
   final UserRole role;
   final String hospitalId;
+  final String phone;
+  final String? avatarUrl;
   final DateTime createdAt;
 
   const UserModel({
@@ -30,17 +32,22 @@ class UserModel {
     required this.name,
     required this.role,
     required this.hospitalId,
+    required this.phone,
+    required this.avatarUrl,
     required this.createdAt,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
+    final url = data['avatarUrl'] as String?;
     return UserModel(
       uid: doc.id,
       email: data['email'] as String? ?? '',
       name: data['name'] as String? ?? '',
       role: _roleFromString(data['role'] as String?),
       hospitalId: data['hospitalId'] as String? ?? '',
+      phone: data['phone'] as String? ?? '',
+      avatarUrl: (url != null && url.isNotEmpty) ? url : null,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -50,6 +57,8 @@ class UserModel {
         'name': name,
         'role': role.value,
         'hospitalId': hospitalId,
+        'phone': phone,
+        'avatarUrl': avatarUrl ?? '',
         'createdAt': Timestamp.fromDate(createdAt),
       };
 }

@@ -13,7 +13,6 @@ import 'package:medicare/helpers/widgets/my_container.dart';
 import 'package:medicare/helpers/widgets/my_dashed_divider.dart';
 import 'package:medicare/helpers/widgets/my_spacing.dart';
 import 'package:medicare/helpers/widgets/my_text.dart';
-import 'package:medicare/images.dart';
 import 'package:medicare/controller/app_notification_controller.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/notification_model.dart';
@@ -21,6 +20,61 @@ import 'package:medicare/route_names.dart';
 import 'package:medicare/widgets/custom_pop_menu.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:provider/provider.dart';
+
+// ── Avatar helpers ────────────────────────────────────────────────────────────
+
+String _initials(String name) {
+  final parts = name.trim().split(RegExp(r'\s+'));
+  if (parts.isEmpty || parts.first.isEmpty) return '?';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+}
+
+Color _avatarColor(String name) {
+  const palette = [
+    Color(0xFF5C6BC0),
+    Color(0xFF26A69A),
+    Color(0xFFEC407A),
+    Color(0xFF8D6E63),
+    Color(0xFF7E57C2),
+    Color(0xFF26C6DA),
+    Color(0xFF66BB6A),
+    Color(0xFFF57C00),
+  ];
+  return palette[name.hashCode.abs() % palette.length];
+}
+
+Widget _avatarWidget(String name, String? avatarUrl, double size) {
+  if (avatarUrl != null && avatarUrl.isNotEmpty) {
+    return ClipOval(
+      child: Image.network(
+        avatarUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _initialsCircle(name, size),
+      ),
+    );
+  }
+  return _initialsCircle(name, size);
+}
+
+Widget _initialsCircle(String name, double size) {
+  return Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(color: _avatarColor(name), shape: BoxShape.circle),
+    alignment: Alignment.center,
+    child: Text(
+      _initials(name),
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: size * 0.38,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+}
 
 class TopBar extends StatefulWidget {
   const TopBar({super.key});
@@ -136,24 +190,22 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin, UI
                   onChange: (_) {},
                   offsetX: -60,
                   offsetY: 8,
-                  menu: Padding(
-                    padding: MySpacing.xy(8, 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        MyContainer.rounded(
-                            paddingAll: 0,
-                            child: Image.asset(
-                              Images.avatars[0],
-                              height: 28,
-                              width: 28,
-                              fit: BoxFit.cover,
-                            )),
-                        MySpacing.width(8),
-                        MyText.labelLarge("Alison")
-                      ],
-                    ),
-                  ),
+                  menu: Obx(() {
+                    final ctrl = AppAuthController.instance;
+                    final name = ctrl.userName;
+                    final avatarUrl = ctrl.userAvatarUrl;
+                    return Padding(
+                      padding: MySpacing.xy(8, 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _avatarWidget(name, avatarUrl, 28),
+                          MySpacing.width(8),
+                          MyText.labelLarge(name),
+                        ],
+                      ),
+                    );
+                  }),
                   menuBuilder: (_) => buildAccountMenu(),
                   hideFn: (hide) => languageHideFn = hide,
                 ),

@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isDoctor() {
+      return hasRole('doctor');
+    }
+
+    // ── users/{uid} ──────────────────────────────────────────────────────────
+    // A user may read/write only their own document.
+    // Admins may read any user document.
+
+    match /users/{uid} {
+      allow read:  if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid);
+    }
+
+    // ── patients ─────────────────────────────────────────────────────────────
+    // Admins have full access.
+    // Doctors may read patients.
+
+    match /patients/{patientId} {
+      allow read:  if isAdmin() || isDoctor();
+      allow write: if isAdmin();
+    }
+
+    // ── appointments ─────────────────────────────────────────────────────────
+    // Admins have full access.
+    // Doctors may read appointments.
+
+    match /appointments/{appointmentId} {
+      allow read:  if isAdmin() || isDoctor();
+      allow write: if isAdmin();
+    }
+
+    // ── doctors ──────────────────────────────────────────────────────────────
+    // Admins have full access.
+    // A doctor may read their own record.
+
+    match /doctors/{doctorId} {
+      allow read:  if isAdmin() || isOwner(doctorId);
+      allow write: if isAdmin();
+    }
+
+    // ── All other collections ────────────────────────────────────────────────
+    // Deny everything not explicitly allowed above.
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

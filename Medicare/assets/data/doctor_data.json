@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "doctor_name": "Chet",
+    "designation": "Oncologist",
+    "email": "mmaier0@cdc.gov",
+    "joining_date": "2024-09-26T03:05:29Z",
+    "mobile_number": "956-524-6444",
+    "degree": "MBBS"
+  },
+  {
+    "id": 2,
+    "doctor_name": "Shelley",
+    "designation": "Neurology",
+    "email": "cmartine1@seesaa.net",
+    "joining_date": "2024-09-24T21:38:31Z",
+    "mobile_number": "658-854-6699",
+    "degree": "MD"
+  },
+  {
+    "id": 3,
+    "doctor_name": "Carmon",
+    "designation": "Cardiologist",
+    "email": "omquhan2@behance.net",
+    "joining_date": "2024-01-01T17:38:37Z",
+    "mobile_number": "755-666-9502",
+    "degree": "MS"
+  },
+  {
+    "id": 4,
+    "doctor_name": "Elliot",
+    "designation": "Clinical Doctor",
+    "email": "hgarbar3@howstuffworks.com",
+    "joining_date": "2023-10-09T09:44:37Z",
+    "mobile_number": "443-619-5462",
+    "degree": "MBBS"
+  },
+  {
+    "id": 5,
+    "doctor_name": "Julita",
+    "designation": "Radiologist",
+    "email": "lpynn4@usgs.gov",
+    "joining_date": "2024-07-17T18:30:29Z",
+    "mobile_number": "769-113-6353",
+    "degree": "MS"
+  },
+  {
+    "id": 6,
+    "doctor_name": "Bucky",
+    "designation": "Therapist",
+    "email": "hdaily5@scribd.com",
+    "joining_date": "2024-02-22T05:51:13Z",
+    "mobile_number": "832-304-5123",
+    "degree": "MS"
+  },
+  {
+    "id": 7,
+    "doctor_name": "Kain",
+    "designation": "Pediatrics",
+    "email": "ughidotti6@marketwatch.com",
+    "joining_date": "2023-12-06T08:50:41Z",
+    "mobile_number": "553-948-4813",
+    "degree": "MD"
+  },
+  {
+    "id": 8,
+    "doctor_name": "Arie",
+    "designation": "Dentist",
+    "email": "hreubens7@friendfeed.com",
+    "joining_date": "2024-05-14T17:26:18Z",
+    "mobile_number": "583-303-2386",
+    "degree": "MBBS"
+  },
+  {
+    "id": 9,
+    "doctor_name": "Romeo",
+    "designation": "Pediatrics",
+    "email": "sohowbane8@walmart.com",
+    "joining_date": "2024-05-22T18:27:45Z",
+    "mobile_number": "683-995-4507",
+    "degree": "MBBS"
+  },
+  {
+    "id": 10,
+    "doctor_name": "Leanna",
+    "designation": "Gynecologist",
+    "email": "bardley9@gnu.org",
+    "joining_date": "2023-12-30T12:37:07Z",
+    "mobile_number": "895-345-8706",
+    "degree": "MD"
+  }
+]

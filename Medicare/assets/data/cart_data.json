@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Medicine Pills",
+    "image": "assets/images/products/medicine_pills.jpg",
+    "price": 30,
+    "quantity": 1,
+    "sub_total": 30
+  },
+  {
+    "name": "Medigrip",
+    "image": "assets/images/products/medigrip.jpg",
+    "price": 30,
+    "quantity": 1,
+    "sub_total": 30
+  },
+  {
+    "name": "Pulse Oximeter",
+    "image": "assets/images/products/pulse_oximeter.jpg",
+    "price": 15,
+    "quantity": 2,
+    "sub_total": 30
+  },
+  {
+    "name": "Thermometer",
+    "image": "assets/images/products/thermometer.jpg",
+    "price": 30,
+    "quantity": 5,
+    "sub_total": 150
+  }
+]

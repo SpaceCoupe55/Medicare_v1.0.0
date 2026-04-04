@@ -1,0 +1,21 @@
+@import url("https://cdn.jsdelivr.net/npm/@iconscout/unicons@4.0.8/css/line.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url("pre.css");
+
+body{
+    font-family: "Inter" !important;
+}
+
+h1, h2,h3,h4,h5,h6{
+    font-family: "Inter"
+}
+
+
+.content {
+    margin: 16px;
+}
+
+.container {
+    margin-top: 24px;
+    margin-bottom: 24px;
+}

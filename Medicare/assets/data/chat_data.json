@@ -1,0 +1,197 @@
+[
+  {
+    "first_name": "John Doe",
+    "email": "john.doe@example.com",
+    "messages": [
+      {
+        "message": "What's up today?",
+        "send_at": "2024-02-11T22:20:54Z",
+        "from_me": false
+      },
+      {
+        "message": "Reminder: Meeting tomorrow!",
+        "send_at": "2023-05-14T18:46:50Z",
+        "from_me": true
+      },
+      {
+        "message": "Meeting with you and Tony today?",
+        "send_at": "2023-05-21T20:51:57Z",
+        "from_me": false
+      },
+      {
+        "message": "Everything's good. Meeting tomorrow at 10 AM.",
+        "send_at": "2023-05-05T03:19:16Z",
+        "from_me": false
+      }
+    ]
+  },
+  {
+    "first_name": "Emma Brown",
+    "email": "emma.brown@example.com",
+    "messages": [
+      {
+        "message": "Is the planning meeting on for today?",
+        "send_at": "2023-04-25T23:34:51Z",
+        "from_me": false
+      },
+      {
+        "message": "Check these assets, please.",
+        "send_at": "2023-11-21T20:00:30Z",
+        "from_me": true
+      },
+      {
+        "message": "Morning! How's everything? What's the plan for our next meeting?",
+        "send_at": "2023-05-27T00:16:35Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "James Smith",
+    "email": "james.smith@example.com",
+    "messages": [
+      {
+        "message": "Got 15 minutes to talk?",
+        "send_at": "2023-12-18T05:44:22Z",
+        "from_me": false
+      },
+      {
+        "message": "Shall we meet with Tony today?",
+        "send_at": "2023-04-24T09:40:57Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Isabella Johnson",
+    "email": "isabella.johnson@example.com",
+    "messages": [
+      {
+        "message": "Meeting with Tony today?",
+        "send_at": "2023-05-01T05:59:30Z",
+        "from_me": false
+      },
+      {
+        "message": "Update on the project.",
+        "send_at": "2023-06-14T15:29:52Z",
+        "from_me": true
+      },
+      {
+        "message": "Going shopping for gifts. 🎁",
+        "send_at": "2024-02-14T01:55:57Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Ethan Davis",
+    "email": "ethan.davis@example.com",
+    "messages": [
+      {
+        "message": "Interested in learning something new?",
+        "send_at": "2023-07-20T12:51:19Z",
+        "from_me": false
+      },
+      {
+        "message": "Planning meeting today?",
+        "send_at": "2023-11-21T03:58:23Z",
+        "from_me": false
+      },
+      {
+        "message": "New insights on the topic.",
+        "send_at": "2024-01-01T11:04:58Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Sophia Garcia",
+    "email": "sophia.garcia@example.com",
+    "messages": [
+      {
+        "message": "Can we talk for 15 minutes?",
+        "send_at": "2023-08-01T18:53:19Z",
+        "from_me": false
+      },
+      {
+        "message": "New findings on the study.",
+        "send_at": "2023-09-15T13:44:12Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Oliver Martinez",
+    "email": "oliver.martinez@example.com",
+    "messages": [
+      {
+        "message": "Meeting today with Tony?",
+        "send_at": "2024-01-04T13:07:46Z",
+        "from_me": false
+      },
+      {
+        "message": "Project update coming soon.",
+        "send_at": "2024-01-10T15:04:45Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Ava Taylor",
+    "email": "ava.taylor@example.com",
+    "messages": [
+      {
+        "message": "Hey there!",
+        "send_at": "2023-07-17T19:31:47Z",
+        "from_me": false
+      },
+      {
+        "message": "Update on the research.",
+        "send_at": "2023-08-22T17:10:16Z",
+        "from_me": true
+      },
+      {
+        "message": "New findings on the plant study.",
+        "send_at": "2023-09-20T04:44:26Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Lucas Johnson",
+    "email": "lucas.johnson@example.com",
+    "messages": [
+      {
+        "message": "Please review the design.",
+        "send_at": "2023-08-31T13:30:18Z",
+        "from_me": false
+      },
+      {
+        "message": "Update on the latest findings.",
+        "send_at": "2024-02-25T18:37:02Z",
+        "from_me": true
+      }
+    ]
+  },
+  {
+    "first_name": "Lily Wilson",
+    "email": "lily.wilson@example.com",
+    "messages": [
+      {
+        "message": "How are you? Next meeting?",
+        "send_at": "2023-07-13T20:51:35Z",
+        "from_me": false
+      },
+      {
+        "message": "Insights from the meeting.",
+        "send_at": "2023-12-23T18:36:17Z",
+        "from_me": true
+      },
+      {
+        "message": "Please review the latest design.",
+        "send_at": "2023-12-13T11:18:57Z",
+        "from_me": false
+      }
+    ]
+  }
+]

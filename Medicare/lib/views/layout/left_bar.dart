@@ -7,7 +7,6 @@ import 'package:medicare/helpers/utils/my_shadow.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/widgets/my_card.dart';
 import 'package:medicare/helpers/widgets/my_container.dart';
-import 'package:medicare/helpers/widgets/my_router.dart';
 import 'package:medicare/helpers/widgets/my_spacing.dart';
 import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/images.dart';
@@ -553,7 +552,6 @@ class _NavigationItemState extends State<NavigationItem> with UIMixin {
       onTap: () {
         if (widget.route != null) {
           Get.toNamed(widget.route!);
-          MyRouter.pushReplacementNamed(context, widget.route!, arguments: 1);
         }
       },
       child: MouseRegion(

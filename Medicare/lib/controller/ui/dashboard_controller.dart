@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/helpers/chart_data.dart';
-import 'package:medicare/models/user_model.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
+import 'package:medicare/models/user_model.dart';
 import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 import 'package:get/get.dart';
@@ -13,7 +15,7 @@ class DashboardController extends MyController with UIMixin {
   List<ChartSampleData>? patientByAge;
   TooltipBehavior tooltipBehavior = TooltipBehavior(enable: true);
 
-  // Live counts from Firestore
+  // Live counts — kept as plain ints (GetBuilder handles reactivity)
   int totalPatients = 0;
   int totalDoctors = 0;
   int totalAppointments = 0;
@@ -27,16 +29,39 @@ class DashboardController extends MyController with UIMixin {
 
   bool loading = false;
 
+  // ── Internal state ─────────────────────────────────────────────────────────
+  bool _dataLoaded = false;
+  StreamSubscription? _patientsSub;
+  StreamSubscription? _doctorsSub;
+  Worker? _authWorker;
+
   bool get isAdmin =>
       AppAuthController.instance.user?.role == UserRole.admin;
 
-  String get _hospitalId => AppAuthController.instance.user?.hospitalId ?? '';
+  String get _hospitalId =>
+      AppAuthController.instance.user?.hospitalId ?? '';
 
   @override
   void onInit() {
     _initChartData();
     super.onInit();
-    _loadDashboardData();
+
+    // If user is already available (e.g. hot restart), load immediately.
+    final existing = AppAuthController.instance.user;
+    if (existing != null && existing.hospitalId.isNotEmpty) {
+      _dataLoaded = true;
+      _setupRealtimeListeners();
+      loadDashboard();
+    }
+
+    // Also react whenever the auth user changes (initial login, token refresh).
+    _authWorker = ever(AppAuthController.instance.appUser, (UserModel? user) {
+      if (user != null && user.hospitalId.isNotEmpty && !_dataLoaded) {
+        _dataLoaded = true;
+        _setupRealtimeListeners();
+        loadDashboard();
+      }
+    });
   }
 
   void _initChartData() {
@@ -54,7 +79,37 @@ class DashboardController extends MyController with UIMixin {
     );
   }
 
-  Future<void> _loadDashboardData() async {
+  // ── Real-time listeners (patients + doctors only) ──────────────────────────
+
+  void _setupRealtimeListeners() {
+    final hid = _hospitalId;
+    if (hid.isEmpty) return;
+    final db = FirebaseFirestore.instance;
+
+    _patientsSub?.cancel();
+    _patientsSub = db
+        .collection('patients')
+        .where('hospitalId', isEqualTo: hid)
+        .snapshots()
+        .listen((snap) {
+      totalPatients = snap.docs.length;
+      update();
+    }, onError: (_) {});
+
+    _doctorsSub?.cancel();
+    _doctorsSub = db
+        .collection('doctors')
+        .where('hospitalId', isEqualTo: hid)
+        .snapshots()
+        .listen((snap) {
+      totalDoctors = snap.docs.length;
+      update();
+    }, onError: (_) {});
+  }
+
+  // ── Main load / refresh ────────────────────────────────────────────────────
+
+  Future<void> loadDashboard() async {
     loading = true;
     update();
 
@@ -64,86 +119,101 @@ class DashboardController extends MyController with UIMixin {
     try {
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
-      final yearStart = DateTime(today.year, 1, 1);
+      final endOfDay   = DateTime(today.year, today.month, today.day, 23, 59, 59);
+      final yearStart  = DateTime(today.year, 1, 1);
+      final yearEnd    = DateTime(today.year, 12, 31, 23, 59, 59);
 
+      // ── Parallel: stat counts + chart data + doctors list ─────────────────
       final results = await Future.wait([
-        // 0 – total patients
-        db.collection('patients').where('hospitalId', isEqualTo: hid).count().get(),
-        // 1 – total doctors
-        db.collection('doctors').where('hospitalId', isEqualTo: hid).count().get(),
-        // 2 – total appointments
-        db.collection('appointments').where('hospitalId', isEqualTo: hid).count().get(),
-        // 3 – today's appointments
-        db
-            .collection('appointments')
+        // 0 – total appointments count
+        db.collection('appointments')
             .where('hospitalId', isEqualTo: hid)
-            .where('dateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('dateTime', isLessThan: Timestamp.fromDate(endOfDay))
             .count()
             .get(),
-        // 4 – recent 5 appointments
-        db
-            .collection('appointments')
+        // 1 – today's appointments count
+        db.collection('appointments')
             .where('hospitalId', isEqualTo: hid)
-            .orderBy('createdAt', descending: true)
+            .where('dateTime',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('dateTime',
+                isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+            .count()
+            .get(),
+        // 2 – recent 5 appointments
+        db.collection('appointments')
+            .where('hospitalId', isEqualTo: hid)
+            .orderBy('dateTime', descending: true)
             .limit(5)
             .get(),
-        // 5 – this year's appointments (for monthly chart)
-        db
-            .collection('appointments')
+        // 3 – this year's appointments (for chart)
+        db.collection('appointments')
             .where('hospitalId', isEqualTo: hid)
-            .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(yearStart))
+            .where('dateTime',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(yearStart))
+            .where('dateTime',
+                isLessThanOrEqualTo: Timestamp.fromDate(yearEnd))
             .get(),
-        // 6 – this year's patients (for monthly gender chart)
-        db
-            .collection('patients')
+        // 4 – this year's patients (for gender chart)
+        db.collection('patients')
             .where('hospitalId', isEqualTo: hid)
-            .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(yearStart))
+            .where('createdAt',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(yearStart))
+            .where('createdAt',
+                isLessThanOrEqualTo: Timestamp.fromDate(yearEnd))
             .get(),
-        // 7 – top 5 doctors
-        db.collection('doctors').where('hospitalId', isEqualTo: hid).limit(5).get(),
+        // 5 – top 5 doctors
+        db.collection('doctors')
+            .where('hospitalId', isEqualTo: hid)
+            .limit(5)
+            .get(),
       ]);
 
-      totalPatients          = (results[0] as AggregateQuerySnapshot).count ?? 0;
-      totalDoctors           = (results[1] as AggregateQuerySnapshot).count ?? 0;
-      totalAppointments      = (results[2] as AggregateQuerySnapshot).count ?? 0;
-      totalAppointmentsToday = (results[3] as AggregateQuerySnapshot).count ?? 0;
+      // ── Stat cards ─────────────────────────────────────────────────────────
+      totalAppointments      = (results[0] as AggregateQuerySnapshot).count ?? 0;
+      totalAppointmentsToday = (results[1] as AggregateQuerySnapshot).count ?? 0;
+      // totalPatients / totalDoctors come from real-time listeners —
+      // only set them here if the listeners haven't fired yet.
+      if (totalPatients == 0 || totalDoctors == 0) {
+        final pc = await db.collection('patients')
+            .where('hospitalId', isEqualTo: hid).count().get();
+        final dc = await db.collection('doctors')
+            .where('hospitalId', isEqualTo: hid).count().get();
+        if (totalPatients == 0) totalPatients = pc.count ?? 0;
+        if (totalDoctors  == 0) totalDoctors  = dc.count ?? 0;
+      }
 
-      // Recent appointments
-      final recentSnap = results[4] as QuerySnapshot<Map<String, dynamic>>;
+      // ── Recent appointments ────────────────────────────────────────────────
+      final recentSnap = results[2] as QuerySnapshot<Map<String, dynamic>>;
       recentAppointments = recentSnap.docs.map((doc) {
         final d = doc.data();
         final dt = (d['dateTime'] as Timestamp?)?.toDate() ?? DateTime.now();
         return {
           'id': doc.id,
           'patient_name': d['patientName'] ?? '',
-          'gender': d['gender'] ?? '',
           'appointment_for': d['doctorName'] ?? '',
           'date': dt,
-          'time': dt,
           'status': d['status'] ?? 'scheduled',
         };
       }).toList();
 
-      // Monthly appointment chart (scheduled vs completed)
-      final apptSnap = results[5] as QuerySnapshot<Map<String, dynamic>>;
+      // ── Appointment chart (Scheduled vs Completed by month) ───────────────
+      final apptSnap = results[3] as QuerySnapshot<Map<String, dynamic>>;
       final scheduledByMonth = List.filled(12, 0);
       final completedByMonth = List.filled(12, 0);
       for (final doc in apptSnap.docs) {
         final d = doc.data();
-        final dt = (d['createdAt'] as Timestamp?)?.toDate();
+        final dt = (d['dateTime'] as Timestamp?)?.toDate();
         if (dt == null) continue;
         final m = dt.month - 1;
-        if (d['status'] == 'completed') {
+        if ((d['status'] as String? ?? '').toLowerCase() == 'completed') {
           completedByMonth[m]++;
         } else {
           scheduledByMonth[m]++;
         }
       }
 
-      // Monthly patient registrations by gender
-      final patientSnap = results[6] as QuerySnapshot<Map<String, dynamic>>;
+      // ── Patient gender chart (Male vs Female by month) ─────────────────────
+      final patientSnap = results[4] as QuerySnapshot<Map<String, dynamic>>;
       final maleByMonth   = List.filled(12, 0);
       final femaleByMonth = List.filled(12, 0);
       for (final doc in patientSnap.docs) {
@@ -179,8 +249,8 @@ class DashboardController extends MyController with UIMixin {
         ),
       );
 
-      // Top doctors list
-      final docSnap = results[7] as QuerySnapshot<Map<String, dynamic>>;
+      // ── Top doctors ────────────────────────────────────────────────────────
+      final docSnap = results[5] as QuerySnapshot<Map<String, dynamic>>;
       topDoctors = docSnap.docs.map((doc) {
         final d = doc.data();
         return {
@@ -189,7 +259,7 @@ class DashboardController extends MyController with UIMixin {
         };
       }).toList();
     } catch (_) {
-      // Dashboard degrades gracefully — counts stay at 0.
+      // Dashboard degrades gracefully — counts stay at whatever they were.
     } finally {
       loading = false;
       update();
@@ -208,7 +278,7 @@ class DashboardController extends MyController with UIMixin {
   void goToAppointmentDetail(String id) =>
       Get.toNamed(AppRoutes.appointmentEdit, arguments: {'id': id});
 
-  // ── Chart series ────────────────────────────────────────────────────────────
+  // ── Chart series builders ───────────────────────────────────────────────────
 
   List<SplineSeries<ChartSampleData, String>> treatmentTypeChart() {
     return <SplineSeries<ChartSampleData, String>>[
@@ -252,5 +322,13 @@ class DashboardController extends MyController with UIMixin {
         name: 'Female',
       ),
     ];
+  }
+
+  @override
+  void onClose() {
+    _patientsSub?.cancel();
+    _doctorsSub?.cancel();
+    _authWorker?.dispose();
+    super.onClose();
   }
 }

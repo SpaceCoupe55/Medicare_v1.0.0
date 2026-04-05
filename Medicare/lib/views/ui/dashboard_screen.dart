@@ -44,10 +44,28 @@ class _DashboardScreenState extends State<DashboardScreen> with UIMixin {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     MyText.titleMedium("Dashboard", fontSize: 18, fontWeight: 600),
-                    MyBreadcrumb(
+                    Row(
                       children: [
-                        MyBreadcrumbItem(name: 'Home'),
-                        MyBreadcrumbItem(name: 'Dashboard', active: true),
+                        if (controller.loading)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          IconButton(
+                            icon: const Icon(Icons.refresh, size: 20),
+                            tooltip: 'Refresh',
+                            onPressed: controller.loadDashboard,
+                            splashRadius: 20,
+                          ),
+                        MySpacing.width(8),
+                        MyBreadcrumb(
+                          children: [
+                            MyBreadcrumbItem(name: 'Home'),
+                            MyBreadcrumbItem(name: 'Dashboard', active: true),
+                          ],
+                        ),
                       ],
                     ),
                   ],

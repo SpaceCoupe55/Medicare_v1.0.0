@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/helpers/chart_data.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
@@ -8,6 +9,8 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 class ReportsController extends MyController with UIMixin {
   bool loading = false;
   String? errorMessage;
+  bool _dataLoaded = false;
+  Worker? _authWorker;
 
   // Chart 1 — Monthly appointments by status (12 months, current year)
   List<ChartSampleData> monthlyAppointments = [];
@@ -39,7 +42,26 @@ class ReportsController extends MyController with UIMixin {
   void onInit() {
     super.onInit();
     _seedEmpty();
-    loadData();
+
+    // Load immediately if user is already available, otherwise wait.
+    final existing = AppAuthController.instance.user;
+    if (existing != null && existing.hospitalId.isNotEmpty) {
+      _dataLoaded = true;
+      loadData();
+    }
+
+    _authWorker = ever(AppAuthController.instance.appUser, (user) {
+      if (user != null && (user as dynamic).hospitalId?.isNotEmpty == true && !_dataLoaded) {
+        _dataLoaded = true;
+        loadData();
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    _authWorker?.dispose();
+    super.onClose();
   }
 
   void _seedEmpty() {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,11 +9,35 @@ import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
 class DoctorListController extends MyController {
+  // ── Raw list from Firestore ────────────────────────────────────────────────
+  List<DoctorModel> _allDoctors = [];
+
+  // ── Filtered list rendered by the view ────────────────────────────────────
   List<DoctorModel> doctors = [];
+
   bool loading = false;
   bool loadingMore = false;
   bool hasMore = true;
   String? errorMessage;
+
+  // ── Search / filter state ─────────────────────────────────────────────────
+  final searchTE = TextEditingController();
+  String _query = '';
+  String? specializationFilter;
+  Timer? _debounce;
+
+  int get totalCount => _allDoctors.length;
+
+  // Unique specializations derived from loaded data
+  List<String> get specializationOptions {
+    final seen = <String>{};
+    for (final d in _allDoctors) {
+      final s = d.specialization.trim();
+      if (s.isNotEmpty) { seen.add(s); }
+    }
+    final list = seen.toList()..sort();
+    return list;
+  }
 
   DocumentSnapshot? _lastDocument;
   static const int _pageSize = 20;
@@ -28,12 +54,15 @@ class DoctorListController extends MyController {
     if (isRefresh) {
       _lastDocument = null;
       hasMore = true;
-      doctors = [];
+      _allDoctors = [];
+      _query = '';
+      specializationFilter = null;
+      searchTE.clear();
     }
 
-    if (!hasMore) return;
+    if (!hasMore) { return; }
 
-    if (doctors.isEmpty) {
+    if (_allDoctors.isEmpty) {
       loading = true;
     } else {
       loadingMore = true;
@@ -55,29 +84,63 @@ class DoctorListController extends MyController {
       final snap = await query.get();
       final newItems = snap.docs.map(DoctorModel.fromFirestore).toList();
 
-      doctors.addAll(newItems);
+      _allDoctors.addAll(newItems);
       _lastDocument = snap.docs.isNotEmpty ? snap.docs.last : null;
       hasMore = snap.docs.length == _pageSize;
-    } catch (e) {
+    } catch (_) {
       errorMessage = 'Failed to load doctors. Please try again.';
     } finally {
       loading = false;
       loadingMore = false;
-      update();
+      _applyFilter();
     }
+  }
+
+  void _applyFilter() {
+    final q = _query.toLowerCase().trim();
+    doctors = _allDoctors.where((d) {
+      if (specializationFilter != null &&
+          d.specialization.toLowerCase() !=
+              specializationFilter!.toLowerCase()) {
+        return false;
+      }
+      if (q.isEmpty) { return true; }
+      return d.doctorName.toLowerCase().contains(q) ||
+          d.specialization.toLowerCase().contains(q) ||
+          d.email.toLowerCase().contains(q);
+    }).toList();
+    update();
+  }
+
+  void onSearchChanged(String value) {
+    _debounce?.cancel();
+    _query = value;
+    _debounce = Timer(const Duration(milliseconds: 300), _applyFilter);
+  }
+
+  void clearSearch() {
+    _debounce?.cancel();
+    searchTE.clear();
+    _query = '';
+    _applyFilter();
+  }
+
+  void setSpecializationFilter(String? value) {
+    specializationFilter = (specializationFilter == value) ? null : value;
+    _applyFilter();
   }
 
   Future<void> refreshList() => _loadPage(isRefresh: true);
 
   Future<void> loadMore() async {
-    if (!loadingMore && hasMore) await _loadPage();
+    if (!loadingMore && hasMore) { await _loadPage(); }
   }
 
   Future<void> deleteDoctor(String id) async {
     try {
       await FirebaseFirestore.instance.collection('doctors').doc(id).delete();
-      doctors.removeWhere((d) => d.id == id);
-      update();
+      _allDoctors.removeWhere((d) => d.id == id);
+      _applyFilter();
       Get.snackbar('Deleted', 'Doctor deleted',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
@@ -94,15 +157,18 @@ class DoctorListController extends MyController {
     }
   }
 
-  void goDetailDoctorScreen(DoctorModel doctor) {
-    Get.toNamed(AppRoutes.doctorDetail, arguments: doctor);
-  }
+  void goDetailDoctorScreen(DoctorModel doctor) =>
+      Get.toNamed(AppRoutes.doctorDetail, arguments: doctor);
 
-  void goEditDoctorScreen(DoctorModel doctor) {
-    Get.toNamed(AppRoutes.doctorEdit, arguments: doctor);
-  }
+  void goEditDoctorScreen(DoctorModel doctor) =>
+      Get.toNamed(AppRoutes.doctorEdit, arguments: doctor);
 
-  void addDoctor() {
-    Get.toNamed(AppRoutes.doctorAdd);
+  void addDoctor() => Get.toNamed(AppRoutes.doctorAdd);
+
+  @override
+  void onClose() {
+    searchTE.dispose();
+    _debounce?.cancel();
+    super.onClose();
   }
 }

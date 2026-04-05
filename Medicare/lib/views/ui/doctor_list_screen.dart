@@ -3,6 +3,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/ui/doctor_list_controller.dart';
+import 'package:medicare/helpers/theme/app_themes.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/utils/utils.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb.dart';
@@ -26,12 +27,13 @@ class DoctorListScreen extends StatefulWidget {
 class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
   DoctorListController controller = Get.put(DoctorListController());
 
-  bool get _isAdmin => AppAuthController.instance.user?.role == UserRole.admin;
+  bool get _isAdmin =>
+      AppAuthController.instance.user?.role == UserRole.admin;
 
   @override
   Widget build(BuildContext context) {
     return Layout(
-      child: GetBuilder(
+      child: GetBuilder<DoctorListController>(
         init: controller,
         tag: 'admin_doctor_list_controller',
         builder: (controller) {
@@ -43,7 +45,8 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium("Doctors", fontSize: 18, fontWeight: 600),
+                    MyText.titleMedium("Doctors",
+                        fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
                         MyBreadcrumbItem(name: 'People'),
@@ -62,10 +65,12 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ── Toolbar ──────────────────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          MyText.bodyMedium("Doctor List", fontWeight: 600, muted: true),
+                          MyText.bodyMedium("Doctor List",
+                              fontWeight: 600, muted: true),
                           if (_isAdmin)
                             MyContainer(
                               onTap: controller.addDoctor,
@@ -75,24 +80,74 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(LucideIcons.briefcase_medical, size: 14, color: contentTheme.onPrimary),
+                                  Icon(LucideIcons.briefcase_medical,
+                                      size: 14,
+                                      color: contentTheme.onPrimary),
                                   MySpacing.width(6),
-                                  MyText.labelSmall("Add Doctor", fontWeight: 600, color: contentTheme.onPrimary),
+                                  MyText.labelSmall("Add Doctor",
+                                      fontWeight: 600,
+                                      color: contentTheme.onPrimary),
                                 ],
                               ),
                             ),
                         ],
                       ),
-                      MySpacing.height(20),
+                      MySpacing.height(16),
+
+                      // ── Search bar ───────────────────────────────────────
+                      _SearchBar(
+                        controller: controller.searchTE,
+                        hint: 'Search by name, specialization, email…',
+                        onChanged: controller.onSearchChanged,
+                        onClear: controller.clearSearch,
+                      ),
+                      MySpacing.height(12),
+
+                      // ── Specialization chips (dynamic) ───────────────────
+                      if (controller.specializationOptions.isNotEmpty) ...[
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _FilterChip(
+                              label: 'All',
+                              selected:
+                                  controller.specializationFilter == null,
+                              onTap: () =>
+                                  controller.setSpecializationFilter(null),
+                            ),
+                            for (final s
+                                in controller.specializationOptions)
+                              _FilterChip(
+                                label: s,
+                                selected:
+                                    controller.specializationFilter == s,
+                                onTap: () =>
+                                    controller.setSpecializationFilter(s),
+                              ),
+                          ],
+                        ),
+                        MySpacing.height(10),
+                      ],
+
+                      // ── Result count ─────────────────────────────────────
+                      if (!controller.loading)
+                        MyText.bodySmall(
+                          'Showing ${controller.doctors.length} of '
+                          '${controller.totalCount} doctors',
+                          muted: true,
+                        ),
+                      MySpacing.height(16),
+
+                      // ── Table / states ───────────────────────────────────
                       if (controller.loading)
                         const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
+                            child: Padding(
+                                padding: EdgeInsets.all(40),
+                                child: CircularProgressIndicator()))
                       else if (controller.errorMessage != null)
-                        _errorState(controller.errorMessage!, controller.refreshList)
+                        _errorState(
+                            controller.errorMessage!, controller.refreshList)
                       else if (controller.doctors.isEmpty)
                         _emptyState()
                       else ...[
@@ -101,8 +156,9 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
                           child: DataTable(
                             sortAscending: true,
                             columnSpacing: 60,
-                            onSelectAll: (_) => {},
-                            headingRowColor: WidgetStatePropertyAll(contentTheme.primary.withAlpha(40)),
+                            onSelectAll: (_) {},
+                            headingRowColor: WidgetStatePropertyAll(
+                                contentTheme.primary.withAlpha(40)),
                             dataRowMaxHeight: 60,
                             showBottomBorder: true,
                             clipBehavior: Clip.antiAliasWithSaveLayer,
@@ -132,45 +188,80 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
                                               paddingAll: 0,
                                               height: 32,
                                               width: 32,
-                                              child: Image.asset(Images.avatars[index % Images.avatars.length], fit: BoxFit.cover),
+                                              child: Image.asset(
+                                                  Images.avatars[index %
+                                                      Images.avatars.length],
+                                                  fit: BoxFit.cover),
                                             ),
                                             MySpacing.width(16),
-                                            Flexible(child: MyText.bodySmall(data.doctorName, overflow: TextOverflow.ellipsis)),
+                                            Flexible(
+                                                child: MyText.bodySmall(
+                                                    data.doctorName,
+                                                    overflow: TextOverflow
+                                                        .ellipsis)),
                                           ],
                                         ),
                                       )),
-                                      DataCell(SizedBox(width: 150, child: MyText.bodySmall(data.designation))),
-                                      DataCell(SizedBox(width: 220, child: MyText.bodySmall(data.email, overflow: TextOverflow.ellipsis))),
-                                      DataCell(SizedBox(width: 100, child: MyText.bodySmall(data.degree))),
-                                      DataCell(SizedBox(width: 130, child: MyText.bodySmall(data.mobileNumber))),
-                                      DataCell(SizedBox(width: 120, child: MyText.bodySmall(Utils.getDateStringFromDateTime(data.joiningDate)))),
+                                      DataCell(SizedBox(
+                                          width: 150,
+                                          child: MyText.bodySmall(
+                                              data.designation))),
+                                      DataCell(SizedBox(
+                                          width: 220,
+                                          child: MyText.bodySmall(data.email,
+                                              overflow:
+                                                  TextOverflow.ellipsis))),
+                                      DataCell(SizedBox(
+                                          width: 100,
+                                          child: MyText.bodySmall(
+                                              data.degree))),
+                                      DataCell(SizedBox(
+                                          width: 130,
+                                          child: MyText.bodySmall(
+                                              data.mobileNumber))),
+                                      DataCell(SizedBox(
+                                          width: 120,
+                                          child: MyText.bodySmall(
+                                              Utils.getDateStringFromDateTime(
+                                                  data.joiningDate)))),
                                       DataCell(Row(
                                         children: [
                                           MyContainer(
-                                            onTap: () => controller.goDetailDoctorScreen(data),
+                                            onTap: () => controller
+                                                .goDetailDoctorScreen(data),
                                             paddingAll: 8,
-                                            color: contentTheme.secondary.withAlpha(32),
-                                            child: Icon(LucideIcons.eye, size: 16),
+                                            color: contentTheme.secondary
+                                                .withAlpha(32),
+                                            child: Icon(LucideIcons.eye,
+                                                size: 16),
                                           ),
                                           MySpacing.width(12),
                                           if (_isAdmin) ...[
                                             MySpacing.width(8),
                                             MyContainer(
-                                              onTap: () => controller.goEditDoctorScreen(data),
+                                              onTap: () => controller
+                                                  .goEditDoctorScreen(data),
                                               paddingAll: 8,
-                                              color: contentTheme.secondary.withAlpha(32),
-                                              child: Icon(LucideIcons.pencil, size: 16),
+                                              color: contentTheme.secondary
+                                                  .withAlpha(32),
+                                              child: Icon(LucideIcons.pencil,
+                                                  size: 16),
                                             ),
                                             MySpacing.width(8),
                                             MyContainer(
                                               onTap: () => _confirmDelete(
-                                                  context,
-                                                  'Delete Dr. ${data.doctorName}?',
-                                                  () => controller.deleteDoctor(data.id)),
+                                                context,
+                                                'Delete Dr. ${data.doctorName}?',
+                                                () => controller
+                                                    .deleteDoctor(data.id),
+                                              ),
                                               paddingAll: 8,
-                                              color: contentTheme.danger.withAlpha(30),
-                                              child: Icon(LucideIcons.trash_2,
-                                                  size: 16, color: contentTheme.danger),
+                                              color: contentTheme.danger
+                                                  .withAlpha(30),
+                                              child: Icon(
+                                                  LucideIcons.trash_2,
+                                                  size: 16,
+                                                  color: contentTheme.danger),
                                             ),
                                           ],
                                         ],
@@ -184,10 +275,15 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
                             padding: MySpacing.y(16),
                             child: Center(
                               child: controller.loadingMore
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
                                   : TextButton(
                                       onPressed: controller.loadMore,
-                                      child: MyText.bodyMedium("Load more", color: contentTheme.primary),
+                                      child: MyText.bodyMedium("Load more",
+                                          color: contentTheme.primary),
                                     ),
                             ),
                           ),
@@ -211,13 +307,15 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
         title: const Text('Confirm Delete'),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               Get.back();
               onConfirm();
             },
-            child: Text('Delete', style: TextStyle(color: contentTheme.danger)),
+            child: Text('Delete',
+                style: TextStyle(color: contentTheme.danger)),
           ),
         ],
       ),
@@ -231,19 +329,10 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.user_x, size: 48, color: contentTheme.secondary.withAlpha(100)),
+            Icon(LucideIcons.user_x,
+                size: 48, color: contentTheme.secondary.withAlpha(100)),
             MySpacing.height(12),
-            MyText.bodyMedium("No doctors yet", muted: true),
-            if (_isAdmin) ...[
-              MySpacing.height(12),
-              MyContainer(
-                onTap: controller.addDoctor,
-                borderRadiusAll: 8,
-                color: contentTheme.primary.withAlpha(20),
-                padding: MySpacing.xy(16, 10),
-                child: MyText.bodyMedium("Add First Doctor", color: contentTheme.primary, fontWeight: 600),
-              ),
-            ],
+            MyText.bodyMedium("No doctors match your search", muted: true),
           ],
         ),
       ),
@@ -257,18 +346,119 @@ class _DoctorListScreenState extends State<DoctorListScreen> with UIMixin {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.circle_alert, size: 48, color: contentTheme.danger),
+            Icon(LucideIcons.circle_alert,
+                size: 48, color: contentTheme.danger),
             MySpacing.height(12),
-            MyText.bodyMedium(message, muted: true, textAlign: TextAlign.center),
+            MyText.bodyMedium(message,
+                muted: true, textAlign: TextAlign.center),
             MySpacing.height(12),
             MyContainer(
               onTap: onRetry,
               borderRadiusAll: 8,
               color: contentTheme.primary.withAlpha(20),
               padding: MySpacing.xy(16, 10),
-              child: MyText.bodyMedium("Retry", color: contentTheme.primary, fontWeight: 600),
+              child: MyText.bodyMedium("Retry",
+                  color: contentTheme.primary, fontWeight: 600),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Shared search widgets ──────────────────────────────────────────────────
+
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _SearchBar({
+    required this.controller,
+    required this.hint,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(fontSize: 13, color: theme.hintColor),
+        prefixIcon:
+            Icon(LucideIcons.search, size: 16, color: theme.hintColor),
+        suffixIcon: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (_, value, __) => value.text.isEmpty
+              ? const SizedBox.shrink()
+              : IconButton(
+                  icon: Icon(LucideIcons.x,
+                      size: 15, color: theme.hintColor),
+                  onPressed: onClear,
+                ),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              BorderSide(color: theme.colorScheme.onSurface.withAlpha(60)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              BorderSide(color: theme.colorScheme.onSurface.withAlpha(60)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              BorderSide(color: theme.colorScheme.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? primary : primary.withAlpha(18),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? primary : primary.withAlpha(60),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : primary,
+          ),
         ),
       ),
     );

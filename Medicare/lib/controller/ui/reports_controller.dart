@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/models/user_model.dart';
 import 'package:medicare/helpers/chart_data.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/views/my_controller.dart';
@@ -43,15 +44,16 @@ class ReportsController extends MyController with UIMixin {
     super.onInit();
     _seedEmpty();
 
-    // Load immediately if user is already available, otherwise wait.
+    // Load immediately if the user is already available, otherwise defer.
     final existing = AppAuthController.instance.user;
     if (existing != null && existing.hospitalId.isNotEmpty) {
       _dataLoaded = true;
       loadData();
     }
 
-    _authWorker = ever(AppAuthController.instance.appUser, (user) {
-      if (user != null && (user as dynamic).hospitalId?.isNotEmpty == true && !_dataLoaded) {
+    // React to auth user becoming available (initial login / page refresh).
+    _authWorker = ever(AppAuthController.instance.appUser, (UserModel? user) {
+      if (user != null && user.hospitalId.isNotEmpty && !_dataLoaded) {
         _dataLoaded = true;
         loadData();
       }
@@ -78,12 +80,14 @@ class ReportsController extends MyController with UIMixin {
   }
 
   Future<void> loadData() async {
+    final hid = _hospitalId;
+    if (hid.isEmpty) return; // user not ready yet — ever() will retry
+
     loading = true;
     errorMessage = null;
     update();
 
     final db = FirebaseFirestore.instance;
-    final hid = _hospitalId;
     final now = DateTime.now();
     final yearStart = DateTime(now.year, 1, 1);
     final yearEnd = DateTime(now.year + 1, 1, 1);

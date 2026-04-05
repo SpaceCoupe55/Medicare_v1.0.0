@@ -10,6 +10,7 @@ import 'package:medicare/helpers/theme/theme_customizer.dart';
 import 'package:medicare/config/environment.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/app_notification_controller.dart';
+import 'package:medicare/controller/cart_controller.dart';
 import 'package:medicare/routes.dart';
 import 'package:medicare/views/ui/error_pages/error_404_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,6 +38,7 @@ Future<void> main() async {
       await ThemeCustomizer.init();
       Get.put(AppAuthController(), permanent: true);
       Get.put(AppNotificationController(), permanent: true);
+      Get.put(CartController(), permanent: true);
 
       runApp(ChangeNotifierProvider<AppNotifier>(
         create: (context) => AppNotifier(),

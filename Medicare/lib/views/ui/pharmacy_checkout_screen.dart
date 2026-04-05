@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:get/get.dart';
+import 'package:medicare/controller/cart_controller.dart';
 import 'package:medicare/controller/ui/pharmacy_checkout_controller.dart';
-import 'package:medicare/helpers/theme/app_themes.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb_item.dart';
+import 'package:medicare/helpers/widgets/my_button.dart';
 import 'package:medicare/helpers/widgets/my_container.dart';
-import 'package:medicare/helpers/widgets/my_flex.dart';
-import 'package:medicare/helpers/widgets/my_flex_item.dart';
 import 'package:medicare/helpers/widgets/my_spacing.dart';
 import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/helpers/widgets/my_text_style.dart';
@@ -21,15 +22,17 @@ class PharmacyCheckoutScreen extends StatefulWidget {
   State<PharmacyCheckoutScreen> createState() => _PharmacyCheckoutScreenState();
 }
 
-class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> with UIMixin {
-  PharmacyCheckoutController controller = Get.put(PharmacyCheckoutController());
+class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen>
+    with UIMixin {
+  final PharmacyCheckoutController controller =
+      Get.put(PharmacyCheckoutController());
+
   @override
   Widget build(BuildContext context) {
     return Layout(
-      child: GetBuilder(
+      child: GetBuilder<PharmacyCheckoutController>(
         init: controller,
-        tag: 'pharmacy_checkout_controller',
-        builder: (controller) {
+        builder: (c) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -38,13 +41,11 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> with UI
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium(
-                      "Checkout",
-                      fontSize: 18,
-                      fontWeight: 600,
-                    ),
+                    MyText.titleMedium('Checkout',
+                        fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
+                        MyBreadcrumbItem(name: 'Pharmacy'),
                         MyBreadcrumbItem(name: 'Checkout', active: true),
                       ],
                     ),
@@ -53,14 +54,29 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> with UI
               ),
               MySpacing.height(flexSpacing),
               Padding(
-                padding: MySpacing.x(flexSpacing / 2),
-                child: MyFlex(
-                  children: [
-                    MyFlexItem(sizes: 'lg-8 md-6', child: billingAddress()),
-                    MyFlexItem(sizes: 'lg-4 md-6', child: yourOrder()),
-                  ],
-                ),
+                padding: MySpacing.x(flexSpacing),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 720;
+                  if (isWide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 3, child: _paymentPanel(c)),
+                        MySpacing.width(16),
+                        SizedBox(width: 300, child: _orderPanel(c)),
+                      ],
+                    );
+                  }
+                  return Column(
+                    children: [
+                      _paymentPanel(c),
+                      MySpacing.height(16),
+                      _orderPanel(c),
+                    ],
+                  );
+                }),
               ),
+              MySpacing.height(flexSpacing),
             ],
           );
         },
@@ -68,161 +84,309 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> with UI
     );
   }
 
-  Widget billingAddress() {
+  // ── Payment / Patient panel ─────────────────────────────────────────────────
+
+  Widget _paymentPanel(PharmacyCheckoutController c) {
     return MyContainer(
-      paddingAll: 20,
+      paddingAll: 24,
       borderRadiusAll: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MyText.bodyMedium("Billing Address", fontWeight: 600),
-          MySpacing.height(20),
-          MyFlex(contentPadding: false, children: [
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("First Name", "First Name")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("Last Name", "Last Name")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("Username", "Username")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("Email", "Email")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("Address", "Address")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("Country", "Country")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("State", "State")),
-            MyFlexItem(sizes: 'lg-6', child: commonTextField("Zip", "Zip")),
-          ]),
-          MySpacing.height(20),
-          Theme(
-            data: ThemeData(colorScheme: theme.colorScheme),
-            child: CheckboxListTile(
-              value: controller.isBillingAddress,
-              onChanged: (value) => controller.onBillingAddress(),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: MySpacing.x(0),
-              visualDensity: VisualDensity.compact,
-              title: MyText.bodySmall("Shipping address is the same as my billing address", fontWeight: 600),
+          // ── Patient (optional) ────────────────────────────────────────────
+          _sectionHeader(LucideIcons.user, 'Patient (Optional)'),
+          MySpacing.height(12),
+          c.loadingPatients
+              ? const Center(child: CircularProgressIndicator())
+              : DropdownButtonFormField<String>(
+                  value: c.selectedPatient?.id,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    contentPadding: MySpacing.all(16),
+                    isDense: true,
+                    isCollapsed: true,
+                    hintText: 'Select patient (optional)',
+                    hintStyle:
+                        MyTextStyle.bodySmall(fontWeight: 600, muted: true),
+                  ),
+                  items: [
+                    DropdownMenuItem<String>(
+                        value: null,
+                        child: MyText.bodySmall('-- Walk-in / No patient --',
+                            muted: true)),
+                    ...c.patients.map((p) => DropdownMenuItem<String>(
+                          value: p.id,
+                          child: MyText.bodySmall(
+                              '${p.name}  ·  ${p.mobileNumber}',
+                              overflow: TextOverflow.ellipsis),
+                        )),
+                  ],
+                  onChanged: (id) {
+                    final patient =
+                        c.patients.firstWhereOrNull((p) => p.id == id);
+                    c.selectPatient(patient);
+                  },
+                ),
+
+          MySpacing.height(24),
+
+          // ── Payment method ────────────────────────────────────────────────
+          _sectionHeader(LucideIcons.credit_card, 'Payment Method'),
+          MySpacing.height(12),
+          Obx(() => Row(
+                children: [
+                  _radioOption(
+                    label: 'Cash',
+                    icon: LucideIcons.banknote,
+                    selected:
+                        c.paymentMethod.value == PaymentMethod.cash,
+                    onTap: () => c.setPaymentMethod(PaymentMethod.cash),
+                  ),
+                  MySpacing.width(12),
+                  _radioOption(
+                    label: 'Mobile Money',
+                    icon: LucideIcons.smartphone,
+                    selected:
+                        c.paymentMethod.value == PaymentMethod.momo,
+                    onTap: () => c.setPaymentMethod(PaymentMethod.momo),
+                  ),
+                ],
+              )),
+
+          // ── MoMo fields ───────────────────────────────────────────────────
+          Obx(() {
+            if (c.paymentMethod.value != PaymentMethod.momo) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MySpacing.height(20),
+                _sectionHeader(LucideIcons.smartphone, 'Mobile Money Details'),
+                MySpacing.height(12),
+
+                // Network dropdown
+                MyText.labelMedium('Network', fontWeight: 600, muted: true),
+                MySpacing.height(8),
+                Obx(() => DropdownButtonFormField<MomoNetwork>(
+                      value: c.momoNetwork.value,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        contentPadding: MySpacing.all(16),
+                        isDense: true,
+                        isCollapsed: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: MomoNetwork.mtn,
+                            child: Text('MTN MoMo')),
+                        DropdownMenuItem(
+                            value: MomoNetwork.vodafone,
+                            child: Text('Vodafone Cash')),
+                        DropdownMenuItem(
+                            value: MomoNetwork.airteltigo,
+                            child: Text('AirtelTigo Money')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) c.setMomoNetwork(v);
+                      },
+                    )),
+
+                MySpacing.height(16),
+
+                // Phone number
+                MyText.labelMedium('Phone Number *',
+                    fontWeight: 600, muted: true),
+                MySpacing.height(8),
+                TextFormField(
+                  controller: c.momoPhoneTE,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))
+                  ],
+                  style: MyTextStyle.bodySmall(),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    hintText: '024 000 0000',
+                    hintStyle:
+                        MyTextStyle.bodySmall(fontWeight: 600, muted: true),
+                    isDense: true,
+                    isCollapsed: true,
+                    prefixIcon:
+                        const Icon(LucideIcons.phone, size: 16),
+                    contentPadding: MySpacing.all(16),
+                  ),
+                ),
+
+                MySpacing.height(16),
+
+                // Reference (optional)
+                MyText.labelMedium('Transaction Reference (optional)',
+                    fontWeight: 600, muted: true),
+                MySpacing.height(8),
+                TextFormField(
+                  controller: c.momoReferenceTE,
+                  style: MyTextStyle.bodySmall(),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    hintText: 'e.g. 123456789',
+                    hintStyle:
+                        MyTextStyle.bodySmall(fontWeight: 600, muted: true),
+                    isDense: true,
+                    isCollapsed: true,
+                    prefixIcon:
+                        const Icon(LucideIcons.hash, size: 16),
+                    contentPadding: MySpacing.all(16),
+                  ),
+                ),
+              ],
+            );
+          }),
+
+          MySpacing.height(28),
+
+          // ── Complete Sale button ───────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: MyButton(
+              onPressed: c.completing ? null : c.completeSale,
+              elevation: 0,
+              padding: MySpacing.xy(20, 14),
+              backgroundColor: contentTheme.primary,
+              borderRadiusAll: 10,
+              child: c.completing
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: contentTheme.onPrimary),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.circle_check,
+                            size: 16, color: contentTheme.onPrimary),
+                        MySpacing.width(8),
+                        MyText.labelMedium('Complete Sale',
+                            color: contentTheme.onPrimary, fontWeight: 600),
+                      ],
+                    ),
             ),
           ),
-          Theme(
-            data: ThemeData(colorScheme: theme.colorScheme),
-            child: CheckboxListTile(
-              value: controller.isSaveInformation,
-              onChanged: (value) => controller.onSaveInformation(),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: MySpacing.x(0),
-              visualDensity: VisualDensity.compact,
-              title: MyText.bodySmall("Save this information for next time", fontWeight: 600),
-            ),
-          ),
-          MySpacing.height(20),
-          MyContainer(
-            onTap: (){},
-            padding: MySpacing.xy(12, 8),
-            color: contentTheme.primary,
-            child: MyText.bodySmall("Continue to checkout", fontWeight: 600, color: contentTheme.onPrimary),
-          )
         ],
       ),
     );
   }
 
-  Widget commonTextField(String title, String hintText) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // ── Order summary panel ─────────────────────────────────────────────────────
+
+  Widget _orderPanel(PharmacyCheckoutController c) {
+    final cart = CartController.instance;
+    return MyContainer(
+      paddingAll: 20,
+      borderRadiusAll: 12,
+      child: Obx(() => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionHeader(LucideIcons.receipt, 'Order Summary'),
+              MySpacing.height(16),
+              ...cart.items.map((ci) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MyText.bodySmall(ci.item.name,
+                                  fontWeight: 600,
+                                  overflow: TextOverflow.ellipsis),
+                              MyText.bodySmall(
+                                  '${ci.quantity.value} × GHS ${ci.item.price.toStringAsFixed(2)}',
+                                  muted: true,
+                                  fontSize: 11),
+                            ],
+                          ),
+                        ),
+                        MyText.bodySmall(
+                            'GHS ${ci.lineTotal.toStringAsFixed(2)}',
+                            fontWeight: 600),
+                      ],
+                    ),
+                  )),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  MyText.titleMedium('Grand Total', fontWeight: 700),
+                  MyText.titleMedium(
+                    'GHS ${cart.subtotal.toStringAsFixed(2)}',
+                    fontWeight: 700,
+                    color: contentTheme.primary,
+                  ),
+                ],
+              ),
+            ],
+          )),
+    );
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  Widget _sectionHeader(IconData icon, String title) {
+    return Row(
       children: [
-        MyText.labelMedium(title, fontWeight: 600, muted: true),
-        MySpacing.height(8),
-        TextField(
-          style: MyTextStyle.bodySmall(),
-          decoration: InputDecoration(
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              hintText: hintText,
-              hintStyle: MyTextStyle.bodySmall(),
-              isDense: true,
-              isCollapsed: true,
-              contentPadding: MySpacing.all(16)),
-        ),
+        Icon(icon, size: 16, color: contentTheme.primary),
+        MySpacing.width(8),
+        MyText.labelLarge(title, fontWeight: 600),
       ],
     );
   }
 
-  Widget yourOrder() {
-    return MyContainer(
-      paddingAll: 0,
-      borderRadiusAll: 12,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: MySpacing.all(20),
-            child: MyText.titleMedium("Your Order", fontWeight: 600),
-          ),
-          Divider(height: 0),
-          Padding(
-            padding: MySpacing.xy(24,20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    MyText.bodyMedium("Product", fontWeight: 600),
-                    MyText.bodyMedium("Total", fontWeight: 600),
-                  ],
-                ),
-                MySpacing.height(20),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                        child: MyText.bodySmall("Safi Natural Blood Purifier Syrup 200 ml Manufactured By Hamdard (Wakf) Laboratories",
-                            fontWeight: 600,xMuted: true)),
-                    MySpacing.width(20),
-                    MyText.bodySmall("\$120", fontWeight: 600,xMuted: true),
-                  ],
-                ),
-              ],
+  Widget _radioOption({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: MySpacing.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? contentTheme.primary
+                  : contentTheme.secondary.withAlpha(80),
+              width: selected ? 2 : 1,
             ),
+            color: selected
+                ? contentTheme.primary.withAlpha(15)
+                : Colors.transparent,
           ),
-          Divider(height: 0),
-          Padding(
-            padding: MySpacing.nBottom(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                MyText.bodyMedium("Subtotal",fontWeight: 600),
-                MyText.bodyMedium("\$120.00",fontWeight: 600),
-              ],
-            ),
+          child: Row(
+            children: [
+              Icon(icon,
+                  size: 18,
+                  color: selected
+                      ? contentTheme.primary
+                      : contentTheme.onBackground),
+              MySpacing.width(8),
+              MyText.labelMedium(label,
+                  fontWeight: selected ? 700 : 500,
+                  color: selected ? contentTheme.primary : null),
+            ],
           ),
-          Padding(
-            padding: MySpacing.nBottom(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                MyText.bodyMedium("Shipping",fontWeight: 600),
-                MyText.bodyMedium("\$20.00",fontWeight: 600),
-              ],
-            ),
-          ),
-          Padding(
-            padding: MySpacing.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                MyText.bodyMedium("Tax",fontWeight: 600),
-                MyText.bodyMedium("\$0.00",fontWeight: 600),
-              ],
-            ),
-          ),
-          Divider(height: 0),
-          Padding(
-            padding: MySpacing.xy(24,20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                MyText.titleMedium("Total",fontWeight: 700),
-                MyText.bodyMedium("\$140.00",fontWeight: 700),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

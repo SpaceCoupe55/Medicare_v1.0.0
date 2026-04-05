@@ -15,6 +15,7 @@ import 'package:medicare/helpers/widgets/my_spacing.dart';
 import 'package:medicare/helpers/widgets/my_text.dart';
 import 'package:medicare/controller/app_notification_controller.dart';
 import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/controller/cart_controller.dart';
 import 'package:medicare/models/notification_model.dart';
 import 'package:medicare/route_names.dart';
 import 'package:medicare/widgets/custom_pop_menu.dart';
@@ -143,6 +144,47 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin, UI
                     ),
                   ),
                   menuBuilder: (_) => buildLanguageSelector(),
+                ),
+                MySpacing.width(6),
+                // ── Cart badge ─────────────────────────────────────────────
+                InkWell(
+                  onTap: () => Get.toNamed(AppRoutes.pharmacyCart),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: MySpacing.xy(8, 8),
+                    child: Obx(() {
+                      final count = CartController.instance.totalItems;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(LucideIcons.shopping_cart,
+                              size: 18, color: topBarTheme.onBackground),
+                          if (count > 0)
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 14, minHeight: 14),
+                                child: Text(
+                                  count > 99 ? '99+' : '$count',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    }),
+                  ),
                 ),
                 MySpacing.width(6),
                 CustomPopupMenu(

@@ -72,7 +72,14 @@ class PharmacyDetailController extends MyController {
       products = snap.docs
           .map(PharmacyModel.fromFirestore)
           .where((p) => p.id != _itemId)
-          .map((p) => p.toDisplayMap())
+          .map((p) => <String, dynamic>{
+                'id': p.id,
+                'name': p.name,
+                'category': p.category,
+                'price': p.price,
+                'stock': p.stock,
+                'description': p.description,
+              })
           .toList();
     } catch (_) {
       errorMessage = 'Failed to load product details.';

@@ -1,33 +1,34 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:medicare/controller/auth_controller.dart';
+import 'package:medicare/controller/ui/pharmacy_add_controller.dart';
 import 'package:medicare/controller/ui/pharmacy_list_controller.dart';
+import 'package:medicare/models/pharmacy_model.dart';
 import 'package:medicare/views/my_controller.dart';
 
-const List<String> kPharmacyCategories = [
-  'Medicine',
-  'Equipment',
-  'Consumables',
-  'Lab Supplies',
-];
+class PharmacyEditController extends MyController {
+  late PharmacyModel _item;
 
-class PharmacyAddController extends MyController {
   bool saving = false;
   String? errorMessage;
 
   late TextEditingController nameTE, categoryTE, priceTE, stockTE, descriptionTE;
   String selectedCategory = kPharmacyCategories.first;
 
-  String get _hospitalId => AppAuthController.instance.user?.hospitalId ?? '';
-
   @override
   void onInit() {
-    nameTE        = TextEditingController();
-    categoryTE    = TextEditingController();
-    priceTE       = TextEditingController();
-    stockTE       = TextEditingController();
-    descriptionTE = TextEditingController();
+    final args = Get.arguments;
+    _item = args as PharmacyModel;
+
+    selectedCategory = kPharmacyCategories.contains(_item.category)
+        ? _item.category
+        : kPharmacyCategories.first;
+
+    nameTE        = TextEditingController(text: _item.name);
+    categoryTE    = TextEditingController(text: _item.category);
+    priceTE       = TextEditingController(text: _item.price.toString());
+    stockTE       = TextEditingController(text: _item.stock.toString());
+    descriptionTE = TextEditingController(text: _item.description);
     super.onInit();
   }
 
@@ -48,11 +49,6 @@ class PharmacyAddController extends MyController {
       update();
       return;
     }
-    if (category.isEmpty) {
-      errorMessage = 'Category is required.';
-      update();
-      return;
-    }
 
     saving = true;
     errorMessage = null;
@@ -62,26 +58,27 @@ class PharmacyAddController extends MyController {
       final price = double.tryParse(priceTE.text.trim()) ?? 0.0;
       final stock = int.tryParse(stockTE.text.trim()) ?? 0;
 
-      await FirebaseFirestore.instance.collection('pharmacy').add({
+      await FirebaseFirestore.instance
+          .collection('pharmacy')
+          .doc(_item.id)
+          .update({
         'name': name,
         'category': category,
         'price': price,
         'stock': stock,
         'description': descriptionTE.text.trim(),
-        'hospitalId': _hospitalId,
-        'createdAt': FieldValue.serverTimestamp(),
       });
 
       try { Get.find<PharmacyListController>().refreshList(); } catch (_) {}
 
-      Get.snackbar('Success', 'Item added to inventory.',
+      Get.snackbar('Updated', 'Item updated successfully.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white);
       Get.back();
     } catch (_) {
-      errorMessage = 'Failed to save item.';
-      Get.snackbar('Error', 'Failed to save item.',
+      errorMessage = 'Failed to update item.';
+      Get.snackbar('Error', 'Failed to update item.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);

@@ -5,45 +5,35 @@ class PharmacyModel {
   final String name;
   final String category;
   final double price;
-  final double rate;
   final int stock;
-  final String imageUrl;
+  final String description;
   final String hospitalId;
+  final DateTime createdAt;
 
   const PharmacyModel({
     required this.id,
     required this.name,
     required this.category,
     required this.price,
-    required this.rate,
     required this.stock,
-    required this.imageUrl,
+    required this.description,
     required this.hospitalId,
+    required this.createdAt,
   });
 
-  /// Returns a map with the keys the existing pharmacy UI expects:
-  /// product['name'], product['image'], product['price'], product['rate']
-  Map<String, dynamic> toDisplayMap() => {
-        'id': id,
-        'name': name,
-        'image': imageUrl,
-        'price': price,
-        'rate': rate,
-        'stock': stock,
-        'category': category,
-      };
-
-  factory PharmacyModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory PharmacyModel.fromFirestore(
+      DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
+    final now = DateTime.now();
     return PharmacyModel(
       id: doc.id,
       name: d['name'] as String? ?? '',
       category: d['category'] as String? ?? '',
       price: (d['price'] as num?)?.toDouble() ?? 0.0,
-      rate: (d['rate'] as num?)?.toDouble() ?? 0.0,
-      stock: d['stock'] as int? ?? 0,
-      imageUrl: d['imageUrl'] as String? ?? '',
+      stock: (d['stock'] as num?)?.toInt() ?? 0,
+      description: d['description'] as String? ?? '',
       hospitalId: d['hospitalId'] as String? ?? '',
+      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? now,
     );
   }
 
@@ -51,9 +41,9 @@ class PharmacyModel {
         'name': name,
         'category': category,
         'price': price,
-        'rate': rate,
         'stock': stock,
-        'imageUrl': imageUrl,
+        'description': description,
         'hospitalId': hospitalId,
+        'createdAt': Timestamp.fromDate(createdAt),
       };
 }

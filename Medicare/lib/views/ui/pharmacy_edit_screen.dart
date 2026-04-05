@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:get/get.dart';
 import 'package:medicare/controller/ui/pharmacy_add_controller.dart';
+import 'package:medicare/controller/ui/pharmacy_edit_controller.dart';
 import 'package:medicare/helpers/utils/ui_mixins.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb.dart';
 import 'package:medicare/helpers/widgets/my_breadcrumb_item.dart';
@@ -15,20 +16,20 @@ import 'package:medicare/helpers/widgets/my_text_style.dart';
 import 'package:medicare/helpers/widgets/responsive.dart';
 import 'package:medicare/views/layout/layout.dart';
 
-class PharmacyAddScreen extends StatefulWidget {
-  const PharmacyAddScreen({super.key});
+class PharmacyEditScreen extends StatefulWidget {
+  const PharmacyEditScreen({super.key});
 
   @override
-  State<PharmacyAddScreen> createState() => _PharmacyAddScreenState();
+  State<PharmacyEditScreen> createState() => _PharmacyEditScreenState();
 }
 
-class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
-  PharmacyAddController controller = Get.put(PharmacyAddController());
+class _PharmacyEditScreenState extends State<PharmacyEditScreen> with UIMixin {
+  PharmacyEditController controller = Get.put(PharmacyEditController());
 
   @override
   Widget build(BuildContext context) {
     return Layout(
-      child: GetBuilder<PharmacyAddController>(
+      child: GetBuilder<PharmacyEditController>(
         init: controller,
         builder: (c) {
           return Column(
@@ -39,12 +40,12 @@ class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    MyText.titleMedium('Add Pharmacy Item',
+                    MyText.titleMedium('Edit Pharmacy Item',
                         fontSize: 18, fontWeight: 600),
                     MyBreadcrumb(
                       children: [
                         MyBreadcrumbItem(name: 'Pharmacy'),
-                        MyBreadcrumbItem(name: 'Add Item', active: true),
+                        MyBreadcrumbItem(name: 'Edit Item', active: true),
                       ],
                     ),
                   ],
@@ -85,7 +86,6 @@ class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
                                 _textField('Item Name', 'e.g. Paracetamol 500mg',
                                     LucideIcons.pill, c.nameTE),
                                 MySpacing.height(20),
-                                // Category dropdown
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -101,8 +101,9 @@ class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
                                         contentPadding: MySpacing.all(16),
                                         isDense: true,
                                         isCollapsed: true,
-                                        prefixIcon:
-                                            const Icon(LucideIcons.tag, size: 16),
+                                        prefixIcon: const Icon(
+                                            LucideIcons.tag,
+                                            size: 16),
                                       ),
                                       items: kPharmacyCategories
                                           .map((cat) => DropdownMenuItem(
@@ -131,7 +132,6 @@ class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
                                 _numericField('Stock (units)', '0',
                                     LucideIcons.package, c.stockTE),
                                 MySpacing.height(20),
-                                // Description multiline
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -146,7 +146,8 @@ class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
                                         border: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12)),
-                                        hintText: 'Optional notes about this item…',
+                                        hintText:
+                                            'Optional notes about this item…',
                                         hintStyle: MyTextStyle.bodySmall(
                                             fontWeight: 600, muted: true),
                                         contentPadding: MySpacing.all(16),
@@ -178,7 +179,7 @@ class _PharmacyAddScreenState extends State<PharmacyAddScreen> with UIMixin {
                                         strokeWidth: 2,
                                         color: contentTheme.onPrimary),
                                   )
-                                : MyText.labelMedium('Save Item',
+                                : MyText.labelMedium('Save Changes',
                                     color: contentTheme.onPrimary,
                                     fontWeight: 600),
                           ),

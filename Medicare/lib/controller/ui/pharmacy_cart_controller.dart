@@ -1,30 +1,13 @@
 import 'package:get/get.dart';
-import 'package:medicare/model/cart_model.dart';
+import 'package:medicare/controller/cart_controller.dart';
+import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
 
+// Cart page delegates entirely to the global CartController.
+// This thin controller just provides navigation helpers.
 class PharmacyCartController extends MyController {
-  List<CartData> cart = [];
+  CartController get cart => CartController.instance;
 
-  @override
-  void onInit() {
-    CartData.dummyList.then((value) {
-      cart = value;
-      update();
-    });
-    super.onInit();
-  }
-
-  void incrementQuantity(CartData cart) {
-    if(cart.quantity < 10) cart.quantity++;
-    update();
-  }
-
-  void decrementQuantity(CartData cart) {
-    if(cart.quantity > 1) cart.quantity--;
-    update();
-  }
-
-  void goToCheckoutScreen(){
-    Get.toNamed('/pharmacy_checkout');
-  }
+  void goToCheckout() => Get.toNamed(AppRoutes.pharmacyCheckout);
+  void continueShopping() => Get.toNamed(AppRoutes.pharmacyList);
 }

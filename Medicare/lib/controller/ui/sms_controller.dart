@@ -487,8 +487,8 @@ class SmsController extends MyController {
         sendResult = 'error:Gateway error — message not delivered. Check your mNotify account or sender ID.';
       }
       await _loadLog();
-    } catch (_) {
-      sendResult = 'error:Failed to save log. Please try again.';
+    } catch (e) {
+      sendResult = 'error:Failed to save log: $e';
     } finally {
       sending = false;
       update();

@@ -65,6 +65,38 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── pharmacy ─────────────────────────────────────────────────────────────
+    // Admins have full access. Authenticated users can read (for cart/browsing).
+
+    match /pharmacy/{itemId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ── smsLog ───────────────────────────────────────────────────────────────
+    // Authenticated staff may create log entries. Admins may read all.
+
+    match /smsLog/{logId} {
+      allow read:   if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    // ── smsTemplates ─────────────────────────────────────────────────────────
+    // Admins have full access.
+
+    match /smsTemplates/{templateId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── notifications ────────────────────────────────────────────────────────
+    // A user may read their own notifications. Admins may write.
+
+    match /notifications/{notifId} {
+      allow read:  if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
     // ── All other collections ────────────────────────────────────────────────
     // Deny everything not explicitly allowed above.
 

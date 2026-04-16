@@ -34,11 +34,13 @@ class _ChatScreenState extends State<ChatScreen>
     controller = Get.put(SmsController());
     _tabController = TabController(length: 2, vsync: this)
       ..addListener(() {
+        if (!_tabController.indexIsChanging) return;
         controller.setRecipientMode(
           _tabController.index == 0
               ? RecipientMode.individual
               : RecipientMode.bulk,
         );
+        setState(() {}); // rebuild IndexedStack
       });
   }
 
@@ -94,8 +96,8 @@ class _ChatScreenState extends State<ChatScreen>
                   MySpacing.width(10),
                   Expanded(
                     child: MyText.bodySmall(
-                      'SMS delivery requires a Hubtel / Arkesel gateway — '
-                      'messages are queued locally until configured. Contact admin to set up.',
+                      'SMS powered by mNotify. Ensure your Sender ID "Medicare" is registered '
+                      'and approved in the mNotify dashboard before sending.',
                       color: contentTheme.warning,
                     ),
                   ),
@@ -155,9 +157,9 @@ class _ChatScreenState extends State<ChatScreen>
           const Divider(height: 1),
           Padding(
             padding: MySpacing.all(16),
-            child: TabBarView(
-              controller: _tabController,
-              physics: const NeverScrollableScrollPhysics(),
+            // IndexedStack instead of TabBarView — works in unbounded scroll contexts
+            child: IndexedStack(
+              index: _tabController.index,
               children: [
                 _individualTab(c),
                 _bulkTab(c),
@@ -498,11 +500,9 @@ class _ChatScreenState extends State<ChatScreen>
           // ── Message type toggle ───────────────────────────────────────────
           MyText.labelMedium('Message type', fontWeight: 600, muted: true),
           MySpacing.height(8),
-          Row(children: [
+          Wrap(spacing: 8, runSpacing: 8, children: [
             _typeChip('Standard SMS', MessageType.standard, c),
-            MySpacing.width(8),
             _typeChip('Appt Reminder', MessageType.appointmentReminder, c),
-            MySpacing.width(8),
             _typeChip('Custom Template', MessageType.custom, c),
           ]),
 

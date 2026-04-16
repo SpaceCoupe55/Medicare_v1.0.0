@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/doctor_model.dart';
 import 'package:medicare/models/patient_model.dart';
@@ -373,6 +375,49 @@ class SmsController extends MyController {
     }
   }
 
+  // ── mNotify API ───────────────────────────────────────────────────────────────
+
+  static const _mnotifyApiKey = 'WUKb6M3un9vveHesNTHVbDyjQ';
+  static const _mnotifySenderId = 'Medicare'; // Must be registered in mNotify dashboard
+
+  /// Formats a phone number to Ghana local format (0XXXXXXXXX).
+  String _formatGhanaPhone(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('233') && digits.length == 12) {
+      return '0${digits.substring(3)}';
+    }
+    if (!digits.startsWith('0') && digits.length == 9) {
+      return '0$digits';
+    }
+    return digits;
+  }
+
+  /// Sends an SMS via mNotify and returns true on success.
+  Future<bool> _callMnotify(List<String> phones, String message) async {
+    final formatted = phones
+        .map(_formatGhanaPhone)
+        .where((p) => p.length == 10 && p.startsWith('0'))
+        .toList();
+    if (formatted.isEmpty) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.mnotify.com/api/sms/quick?key=$_mnotifyApiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'recipient': formatted,
+          'sender': _mnotifySenderId,
+          'message': message,
+          'is_schedule': 'false',
+          'schedule_date': '',
+        }),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ── Send ─────────────────────────────────────────────────────────────────────
 
   Future<void> send() async {
@@ -419,22 +464,31 @@ class SmsController extends MyController {
     sending = true;
     update();
 
+    // Call mNotify gateway
+    final phones = recipients.map((r) => r.phone).toList();
+    final apiSuccess = await _callMnotify(phones, msg);
+    final status = apiSuccess ? 'sent' : 'failed';
+
     try {
       await _db.collection('smsLog').add({
         'recipients': recipients.map((r) => r.toMap()).toList(),
         'message': msg,
         'sentBy': _uid,
         'sentAt': FieldValue.serverTimestamp(),
-        'status': 'queued',
+        'status': status,
         'recipientCount': recipients.length,
         'hospitalId': _hid,
       });
 
-      sendResult = 'success:Message queued for ${recipients.length} recipient${recipients.length == 1 ? '' : 's'}.';
-      messageTE.clear();
+      if (apiSuccess) {
+        sendResult = 'success:Message sent to ${recipients.length} recipient${recipients.length == 1 ? '' : 's'}.';
+        messageTE.clear();
+      } else {
+        sendResult = 'error:Gateway error — message not delivered. Check your mNotify account or sender ID.';
+      }
       await _loadLog();
     } catch (_) {
-      sendResult = 'error:Failed to queue message. Please try again.';
+      sendResult = 'error:Failed to save log. Please try again.';
     } finally {
       sending = false;
       update();

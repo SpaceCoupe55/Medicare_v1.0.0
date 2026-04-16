@@ -47,6 +47,22 @@
         { "fieldPath": "patientId", "order": "ASCENDING" },
         { "fieldPath": "dateTime", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "smsLog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hospitalId", "order": "ASCENDING" },
+        { "fieldPath": "sentAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "smsTemplates",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hospitalId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

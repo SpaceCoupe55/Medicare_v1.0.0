@@ -96,8 +96,7 @@ class _ChatScreenState extends State<ChatScreen>
                   MySpacing.width(10),
                   Expanded(
                     child: MyText.bodySmall(
-                      'SMS powered by mNotify. Ensure your Sender ID "Medicare" is registered '
-                      'and approved in the mNotify dashboard before sending.',
+                      'SMS powered by mNotify · Sender ID: SkillUp',
                       color: contentTheme.warning,
                     ),
                   ),

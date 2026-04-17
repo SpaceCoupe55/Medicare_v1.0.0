@@ -378,7 +378,7 @@ class SmsController extends MyController {
   // ── mNotify API ───────────────────────────────────────────────────────────────
 
   static const _mnotifyApiKey = 'WUKb6M3un9vveHesNTHVbDyjQ';
-  static const _mnotifySenderId = 'Medicare'; // Must be registered in mNotify dashboard
+  static const _mnotifySenderId = 'SkillUp';
 
   /// Formats a phone number to Ghana local format (0XXXXXXXXX).
   String _formatGhanaPhone(String raw) {

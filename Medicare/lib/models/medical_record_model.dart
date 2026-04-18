@@ -43,6 +43,9 @@ class MedicalRecordModel {
   final String? attachmentUrl;
   final DateTime visitDate;
   final DateTime createdAt;
+  // Structured data for prescription and lab_result types
+  final List<Map<String, dynamic>> prescriptionItems;
+  final List<Map<String, dynamic>> labItems;
 
   const MedicalRecordModel({
     required this.id,
@@ -55,6 +58,8 @@ class MedicalRecordModel {
     this.attachmentUrl,
     required this.visitDate,
     required this.createdAt,
+    this.prescriptionItems = const [],
+    this.labItems = const [],
   });
 
   factory MedicalRecordModel.fromFirestore(
@@ -72,6 +77,14 @@ class MedicalRecordModel {
       attachmentUrl: d['attachmentUrl'] as String?,
       visitDate: (d['visitDate'] as Timestamp?)?.toDate() ?? now,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? now,
+      prescriptionItems: (d['prescriptionItems'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList() ??
+          [],
+      labItems: (d['labItems'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList() ??
+          [],
     );
   }
 
@@ -85,5 +98,7 @@ class MedicalRecordModel {
         'attachmentUrl': attachmentUrl,
         'visitDate': Timestamp.fromDate(visitDate),
         'createdAt': FieldValue.serverTimestamp(),
+        'prescriptionItems': prescriptionItems,
+        'labItems': labItems,
       };
 }

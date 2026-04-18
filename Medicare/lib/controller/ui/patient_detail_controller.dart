@@ -7,6 +7,7 @@ import 'package:medicare/models/appointment_model.dart';
 import 'package:medicare/models/medical_record_model.dart';
 import 'package:medicare/models/patient_model.dart';
 import 'package:medicare/models/user_model.dart';
+import 'package:medicare/models/vitals_model.dart';
 import 'package:medicare/views/my_controller.dart';
 
 class PatientDetailController extends MyController {
@@ -25,6 +26,14 @@ class PatientDetailController extends MyController {
   bool _recordsLoaded = false;
   StreamSubscription<QuerySnapshot>? _recordsSub;
   String? expandedRecordId;
+
+  // ── Vitals ────────────────────────────────────────────────────────────────
+  List<VitalsModel> vitalsHistory = [];
+  VitalsModel? get latestVitals =>
+      vitalsHistory.isNotEmpty ? vitalsHistory.first : null;
+  bool loadingVitals = false;
+  bool _vitalsLoaded = false;
+  StreamSubscription<QuerySnapshot>? _vitalsSub;
 
   // ── Appointments ──────────────────────────────────────────────────────────
   List<AppointmentModel> appointments = [];
@@ -95,7 +104,7 @@ class PatientDetailController extends MyController {
           .doc(doctorId)
           .get();
       if (doc.exists) {
-        assignedDoctorName = doc.data()?['name'] as String?;
+        assignedDoctorName = doc.data()?['doctorName'] as String?;
       }
     } catch (_) {}
     loadingDoctor = false;
@@ -105,7 +114,8 @@ class PatientDetailController extends MyController {
   // Called by the view when a tab is selected
   void onTabChanged(int index) {
     if (index == 1 && !_recordsLoaded) _subscribeToRecords();
-    if (index == 2 && !_appointmentsLoaded) _loadAppointments();
+    if (index == 2 && !_vitalsLoaded) _subscribeToVitals();
+    if (index == 3 && !_appointmentsLoaded) _loadAppointments();
   }
 
   // ── Records ───────────────────────────────────────────────────────────────
@@ -139,6 +149,33 @@ class PatientDetailController extends MyController {
     update();
   }
 
+  // ── Vitals ────────────────────────────────────────────────────────────────
+
+  void _subscribeToVitals() {
+    if (patientId.isEmpty) return;
+    _vitalsLoaded = true;
+    loadingVitals = true;
+    update();
+    _vitalsSub = FirebaseFirestore.instance
+        .collection('patients')
+        .doc(patientId)
+        .collection('vitals')
+        .orderBy('recordedAt', descending: true)
+        .limit(20)
+        .snapshots()
+        .listen(
+      (snap) {
+        vitalsHistory = snap.docs.map(VitalsModel.fromFirestore).toList();
+        loadingVitals = false;
+        update();
+      },
+      onError: (_) {
+        loadingVitals = false;
+        update();
+      },
+    );
+  }
+
   // ── Appointments ──────────────────────────────────────────────────────────
 
   Future<void> _loadAppointments() async {
@@ -165,6 +202,7 @@ class PatientDetailController extends MyController {
   @override
   void onClose() {
     _recordsSub?.cancel();
+    _vitalsSub?.cancel();
     super.onClose();
   }
 }

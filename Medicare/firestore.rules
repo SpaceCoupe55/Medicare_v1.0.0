@@ -45,6 +45,16 @@ service cloud.firestore {
     match /patients/{patientId} {
       allow read:  if isAdmin() || isDoctor();
       allow write: if isAdmin();
+
+      match /records/{recordId} {
+        allow read:  if isAdmin() || isDoctor();
+        allow write: if isAdmin() || isDoctor();
+      }
+
+      match /vitals/{vitalId} {
+        allow read:  if isAdmin() || isDoctor();
+        allow write: if isAdmin() || isDoctor();
+      }
     }
 
     // ── appointments ─────────────────────────────────────────────────────────

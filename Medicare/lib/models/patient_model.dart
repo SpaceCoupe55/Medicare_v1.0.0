@@ -18,6 +18,11 @@ class PatientModel {
   final String hospitalId;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // EMR fields
+  final List<String> allergies;
+  final List<String> chronicConditions;
+  final String emergencyContact;
+  final String emergencyPhone;
 
   const PatientModel({
     required this.id,
@@ -35,6 +40,10 @@ class PatientModel {
     required this.hospitalId,
     required this.createdAt,
     required this.updatedAt,
+    this.allergies = const [],
+    this.chronicConditions = const [],
+    this.emergencyContact = '',
+    this.emergencyPhone = '',
   });
 
   factory PatientModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -59,6 +68,10 @@ class PatientModel {
       hospitalId: d['hospitalId'] as String? ?? '',
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? now,
       updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? now,
+      allergies: List<String>.from(d['allergies'] as List? ?? []),
+      chronicConditions: List<String>.from(d['chronicConditions'] as List? ?? []),
+      emergencyContact: d['emergencyContact'] as String? ?? '',
+      emergencyPhone: d['emergencyPhone'] as String? ?? '',
     );
   }
 
@@ -77,5 +90,9 @@ class PatientModel {
         'hospitalId': hospitalId,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': FieldValue.serverTimestamp(),
+        'allergies': allergies,
+        'chronicConditions': chronicConditions,
+        'emergencyContact': emergencyContact,
+        'emergencyPhone': emergencyPhone,
       };
 }

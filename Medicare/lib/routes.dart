@@ -33,6 +33,7 @@ import 'package:medicare/views/ui/pharmacy_detail_screen.dart';
 import 'package:medicare/views/ui/pharmacy_edit_screen.dart';
 import 'package:medicare/views/ui/pharmacy_list_screen.dart';
 import 'package:medicare/views/ui/pharmacy_receipt_screen.dart';
+import 'package:medicare/views/ui/doctor_portal_screen.dart';
 import 'package:medicare/views/ui/reports_screen.dart';
 import 'package:medicare/views/ui/setting_screen.dart';
 
@@ -77,6 +78,8 @@ List<GetMiddleware> _pharmacyStaff() => [
       AuthMiddleware(),
       RoleMiddleware([UserRole.admin, UserRole.receptionist]),
     ];
+List<GetMiddleware> _doctorOnly() =>
+    [AuthMiddleware(), RoleMiddleware([UserRole.doctor])];
 
 // ── Route table ───────────────────────────────────────────────────────────────
 
@@ -201,6 +204,13 @@ List<GetPage> getPageRoute() {
       name: AppRoutes.pharmacyReceipt,
       page: () => const PharmacyReceiptScreen(),
       middlewares: _pharmacyStaff(),
+    ),
+
+    // ── Doctor portal — doctor role only ──────────────────────────────────────
+    GetPage(
+      name: AppRoutes.doctorPortal,
+      page: () => const DoctorPortalScreen(),
+      middlewares: _doctorOnly(),
     ),
 
     // ── Chat — all authenticated users ────────────────────────────────────────

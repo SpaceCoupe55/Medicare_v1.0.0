@@ -37,6 +37,9 @@ abstract class AppRoutes {
   static const pharmacyCheckout = '/admin/pharmacy/checkout';
   static const pharmacyReceipt = '/admin/pharmacy/receipt';
 
+  // Doctor portal
+  static const doctorPortal = '/doctor/portal';
+
   // Other
   static const chat = '/admin/chat';
   static const settings = '/admin/setting';

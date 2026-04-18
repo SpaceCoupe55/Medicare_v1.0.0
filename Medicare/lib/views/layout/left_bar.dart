@@ -105,6 +105,7 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin, 
                   child: Obx(() {
                     final role = AppAuthController.instance.user?.role;
                     final isAdmin = role == UserRole.admin;
+                    final isDoctor = role == UserRole.doctor;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,6 +181,18 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin, 
                           isCondensed: isCondensed,
                           route: AppRoutes.chat,
                         ),
+
+                        // ── GROUP: My Portal (doctor only) ───────────────
+                        if (isDoctor) ...[
+                          MySpacing.height(8),
+                          LabelWidget(isCondensed: isCondensed, label: "My Portal"),
+                          NavigationItem(
+                            iconData: LucideIcons.layout_dashboard,
+                            title: "My Dashboard",
+                            isCondensed: isCondensed,
+                            route: AppRoutes.doctorPortal,
+                          ),
+                        ],
 
                         // ── GROUP: System (admin only) ───────────────────
                         if (isAdmin) ...[

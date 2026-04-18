@@ -21,6 +21,7 @@ import 'package:medicare/helpers/widgets/my_text_style.dart';
 import 'package:medicare/models/appointment_model.dart';
 import 'package:medicare/models/medical_record_model.dart';
 import 'package:medicare/models/patient_model.dart';
+import 'package:medicare/models/pharmacy_model.dart';
 import 'package:medicare/models/vitals_model.dart';
 import 'package:medicare/route_names.dart';
 import 'package:medicare/views/layout/layout.dart';
@@ -1433,6 +1434,32 @@ class _AddRecordDialogState extends State<_AddRecordDialog> with UIMixin {
   final List<_MedicineRow> _medicines = [_MedicineRow()];
   final List<_LabRow> _labTests = [_LabRow()];
 
+  // Pharmacy stock for prescription autocomplete
+  List<PharmacyModel> _pharmacyItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPharmacy();
+  }
+
+  Future<void> _loadPharmacy() async {
+    final user = AppAuthController.instance.user;
+    if (user == null) return;
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('pharmacy')
+          .where('hospitalId', isEqualTo: user.hospitalId)
+          .orderBy('name')
+          .get();
+      if (mounted) {
+        setState(() {
+          _pharmacyItems = snap.docs.map(PharmacyModel.fromFirestore).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   static const _typeOptions = [
     ('note', 'Note'),
     ('diagnosis', 'Diagnosis'),
@@ -1616,15 +1643,35 @@ class _AddRecordDialogState extends State<_AddRecordDialog> with UIMixin {
                         Row(children: [
                           Expanded(
                             flex: 3,
-                            child: TextFormField(
-                              controller: row.name,
-                              style: MyTextStyle.bodySmall(),
-                              decoration: InputDecoration(
-                                  labelText: 'Medicine name',
-                                  border: outlineInputBorder,
-                                  contentPadding: MySpacing.all(10),
-                                  isCollapsed: true,
-                                  isDense: true),
+                            child: Autocomplete<String>(
+                              initialValue: TextEditingValue(text: row.name.text),
+                              optionsBuilder: (tv) {
+                                if (_pharmacyItems.isEmpty) return const [];
+                                final q = tv.text.toLowerCase();
+                                if (q.isEmpty) {
+                                  return _pharmacyItems.map((p) => p.name).take(8);
+                                }
+                                return _pharmacyItems
+                                    .where((p) => p.name.toLowerCase().contains(q))
+                                    .map((p) => p.name)
+                                    .take(8);
+                              },
+                              onSelected: (s) => row.name.text = s,
+                              fieldViewBuilder: (ctx, ctrl, focusNode, _) {
+                                ctrl.addListener(() => row.name.text = ctrl.text);
+                                return TextFormField(
+                                  controller: ctrl,
+                                  focusNode: focusNode,
+                                  style: MyTextStyle.bodySmall(),
+                                  decoration: InputDecoration(
+                                    labelText: 'Medicine name',
+                                    border: outlineInputBorder,
+                                    contentPadding: MySpacing.all(10),
+                                    isCollapsed: true,
+                                    isDense: true,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           MySpacing.width(8),

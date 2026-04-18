@@ -171,6 +171,7 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin, 
                           title: "Pharmacy",
                           children: [
                             MenuItem(title: "Inventory", isCondensed: isCondensed, route: AppRoutes.pharmacyList),
+                            MenuItem(title: "Rx Queue", isCondensed: isCondensed, route: AppRoutes.prescriptionQueue),
                             MenuItem(title: "Cart", isCondensed: isCondensed, route: AppRoutes.pharmacyCart),
                             MenuItem(title: "Checkout", isCondensed: isCondensed, route: AppRoutes.pharmacyCheckout),
                           ],

@@ -83,6 +83,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── prescriptions ────────────────────────────────────────────────────────
+    // Doctors create (via patient_detail_screen dual-write).
+    // Pharmacy staff (admin/receptionist) read and update status.
+    // Clinical staff (doctors/nurses) can read to see fulfillment status.
+
+    match /prescriptions/{rxId} {
+      allow read:   if isAdmin() || isDoctor() || hasRole('nurse') || hasRole('receptionist');
+      allow create: if isAdmin() || isDoctor();
+      allow update: if isAdmin() || hasRole('receptionist');
+    }
+
     // ── smsLog ───────────────────────────────────────────────────────────────
     // Authenticated staff may create log entries. Admins may read all.
 

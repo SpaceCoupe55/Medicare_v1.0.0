@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/controller/cart_controller.dart';
 import 'package:medicare/models/patient_model.dart';
+import 'package:medicare/models/prescription_model.dart';
 import 'package:medicare/models/sale_model.dart';
 import 'package:medicare/route_names.dart';
 import 'package:medicare/views/my_controller.dart';
@@ -13,6 +14,9 @@ enum MomoNetwork { mtn, vodafone, airteltigo }
 
 class PharmacyCheckoutController extends MyController {
   CartController get cart => CartController.instance;
+
+  // ── Prescription fulfillment context (set when coming from Rx queue) ───────
+  PrescriptionModel? activePrescription;
 
   // ── Patient selection ─────────────────────────────────────────────────────
   List<PatientModel> patients = [];
@@ -34,6 +38,11 @@ class PharmacyCheckoutController extends MyController {
     momoPhoneTE    = TextEditingController();
     momoReferenceTE = TextEditingController();
     super.onInit();
+    // Check if launched from prescription queue
+    final args = Get.arguments;
+    if (args is PrescriptionModel) {
+      activePrescription = args;
+    }
     _loadPatients();
   }
 
@@ -49,6 +58,14 @@ class PharmacyCheckoutController extends MyController {
           .limit(100)
           .get();
       patients = snap.docs.map(PatientModel.fromFirestore).toList();
+      // Pre-select patient from prescription context
+      if (activePrescription != null) {
+        selectedPatient = patients.firstWhereOrNull(
+            (p) => p.id == activePrescription!.patientId);
+        if (selectedPatient != null) {
+          momoPhoneTE.text = selectedPatient!.mobileNumber;
+        }
+      }
     } catch (_) {}
     loadingPatients = false;
     update();
@@ -123,7 +140,8 @@ class PharmacyCheckoutController extends MyController {
                 ? null
                 : momoReferenceTE.text.trim())
             : null,
-        'patientId': selectedPatient?.id,
+        'patientId': selectedPatient?.id ?? activePrescription?.patientId,
+        'prescriptionId': activePrescription?.id,
         'soldBy': uid,
         'hospitalId': _hospitalId,
         'createdAt': FieldValue.serverTimestamp(),
@@ -163,6 +181,21 @@ class PharmacyCheckoutController extends MyController {
           'relatedId': saleRef.id,
           'createdAt': FieldValue.serverTimestamp(),
         });
+      }
+
+      // Mark prescription fulfilled (if applicable)
+      if (activePrescription != null) {
+        batch.update(
+          FirebaseFirestore.instance
+              .collection('prescriptions')
+              .doc(activePrescription!.id),
+          {
+            'status': 'fulfilled',
+            'saleId': saleRef.id,
+            'fulfilledBy': uid,
+            'fulfilledAt': FieldValue.serverTimestamp(),
+          },
+        );
       }
 
       await batch.commit();

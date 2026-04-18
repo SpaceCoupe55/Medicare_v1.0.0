@@ -34,6 +34,7 @@ import 'package:medicare/views/ui/pharmacy_edit_screen.dart';
 import 'package:medicare/views/ui/pharmacy_list_screen.dart';
 import 'package:medicare/views/ui/pharmacy_receipt_screen.dart';
 import 'package:medicare/views/ui/doctor_portal_screen.dart';
+import 'package:medicare/views/ui/prescription_queue_screen.dart';
 import 'package:medicare/views/ui/reports_screen.dart';
 import 'package:medicare/views/ui/setting_screen.dart';
 
@@ -203,6 +204,13 @@ List<GetPage> getPageRoute() {
     GetPage(
       name: AppRoutes.pharmacyReceipt,
       page: () => const PharmacyReceiptScreen(),
+      middlewares: _pharmacyStaff(),
+    ),
+
+    // ── Prescription queue — pharmacy staff ───────────────────────────────────
+    GetPage(
+      name: AppRoutes.prescriptionQueue,
+      page: () => const PrescriptionQueueScreen(),
       middlewares: _pharmacyStaff(),
     ),
 

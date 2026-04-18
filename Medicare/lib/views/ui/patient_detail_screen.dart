@@ -22,6 +22,7 @@ import 'package:medicare/models/appointment_model.dart';
 import 'package:medicare/models/medical_record_model.dart';
 import 'package:medicare/models/patient_model.dart';
 import 'package:medicare/models/pharmacy_model.dart';
+import 'package:medicare/models/prescription_model.dart';
 import 'package:medicare/models/vitals_model.dart';
 import 'package:medicare/route_names.dart';
 import 'package:medicare/views/layout/layout.dart';
@@ -679,6 +680,47 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                             fontWeight: FontWeight.bold,
                             color: color)),
                   ),
+                  // Fulfillment badge for prescriptions
+                  if (record.type == RecordType.prescription) ...[
+                    MySpacing.width(6),
+                    Builder(builder: (_) {
+                      final rxStatus = ctrl.rxStatusByRecordId[record.id];
+                      final isFulfilled =
+                          rxStatus == PrescriptionStatus.fulfilled;
+                      final badgeColor = isFulfilled
+                          ? contentTheme.success
+                          : contentTheme.warning;
+                      final badgeLabel =
+                          rxStatus == null ? 'Pending' : (isFulfilled ? 'Dispensed' : 'Pending');
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withAlpha(25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: badgeColor.withAlpha(80)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isFulfilled
+                                  ? LucideIcons.circle_check
+                                  : LucideIcons.clock,
+                              size: 10,
+                              color: badgeColor,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(badgeLabel,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: badgeColor)),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
                   MySpacing.width(12),
                   Expanded(
                       child:
@@ -1517,11 +1559,13 @@ class _AddRecordDialogState extends State<_AddRecordDialog> with UIMixin {
         : <Map<String, dynamic>>[];
 
     try {
-      await FirebaseFirestore.instance
+      final recordRef = FirebaseFirestore.instance
           .collection('patients')
           .doc(widget.patientId)
           .collection('records')
-          .add({
+          .doc();
+
+      final recordData = {
         'patientId': widget.patientId,
         'doctorId': auth.user?.uid ?? '',
         'doctorName': auth.userName,
@@ -1533,7 +1577,40 @@ class _AddRecordDialogState extends State<_AddRecordDialog> with UIMixin {
         'createdAt': FieldValue.serverTimestamp(),
         'prescriptionItems': prescriptionItems,
         'labItems': labItems,
-      });
+      };
+
+      final batch = FirebaseFirestore.instance.batch();
+      batch.set(recordRef, recordData);
+
+      // Dual-write to top-level prescriptions collection so pharmacy can query
+      if (_type == 'prescription' && prescriptionItems.isNotEmpty) {
+        final patientDoc = await FirebaseFirestore.instance
+            .collection('patients')
+            .doc(widget.patientId)
+            .get();
+        final patientName =
+            patientDoc.data()?['name'] as String? ?? 'Unknown Patient';
+
+        final rxRef =
+            FirebaseFirestore.instance.collection('prescriptions').doc();
+        batch.set(rxRef, {
+          'patientId': widget.patientId,
+          'patientName': patientName,
+          'doctorId': auth.user?.uid ?? '',
+          'doctorName': auth.userName,
+          'recordId': recordRef.id,
+          'items': prescriptionItems,
+          'status': 'pending',
+          'saleId': null,
+          'fulfilledBy': null,
+          'fulfilledAt': null,
+          'hospitalId': auth.user?.hospitalId ?? '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

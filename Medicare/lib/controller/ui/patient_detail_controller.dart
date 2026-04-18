@@ -6,6 +6,7 @@ import 'package:medicare/controller/auth_controller.dart';
 import 'package:medicare/models/appointment_model.dart';
 import 'package:medicare/models/medical_record_model.dart';
 import 'package:medicare/models/patient_model.dart';
+import 'package:medicare/models/prescription_model.dart';
 import 'package:medicare/models/user_model.dart';
 import 'package:medicare/models/vitals_model.dart';
 import 'package:medicare/views/my_controller.dart';
@@ -26,6 +27,8 @@ class PatientDetailController extends MyController {
   bool _recordsLoaded = false;
   StreamSubscription<QuerySnapshot>? _recordsSub;
   String? expandedRecordId;
+  // recordId → fulfillment status (for prescription records)
+  Map<String, PrescriptionStatus> rxStatusByRecordId = {};
 
   // ── Vitals ────────────────────────────────────────────────────────────────
   List<VitalsModel> vitalsHistory = [];
@@ -136,12 +139,30 @@ class PatientDetailController extends MyController {
         records = snap.docs.map(MedicalRecordModel.fromFirestore).toList();
         loadingRecords = false;
         update();
+        _loadRxStatuses();
       },
       onError: (_) {
         loadingRecords = false;
         update();
       },
     );
+  }
+
+  Future<void> _loadRxStatuses() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('prescriptions')
+          .where('patientId', isEqualTo: patientId)
+          .get();
+      rxStatusByRecordId = {
+        for (final doc in snap.docs)
+          (doc.data()['recordId'] as String? ?? ''):
+              (doc.data()['status'] as String?) == 'fulfilled'
+                  ? PrescriptionStatus.fulfilled
+                  : PrescriptionStatus.pending,
+      };
+      update();
+    } catch (_) {}
   }
 
   void toggleExpanded(String recordId) {

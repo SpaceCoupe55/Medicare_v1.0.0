@@ -53,6 +53,47 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen>
                 ),
               ),
               MySpacing.height(flexSpacing),
+
+              // Prescription fulfillment banner
+              if (c.activePrescription != null)
+                Padding(
+                  padding: MySpacing.x(flexSpacing),
+                  child: Container(
+                    margin: MySpacing.bottom(flexSpacing),
+                    padding: MySpacing.xy(16, 12),
+                    decoration: BoxDecoration(
+                      color: contentTheme.primary.withAlpha(18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: contentTheme.primary.withAlpha(60)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.file_check,
+                            size: 18, color: contentTheme.primary),
+                        MySpacing.width(10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MyText.bodyMedium(
+                                'Filling prescription for ${c.activePrescription!.patientName}',
+                                fontWeight: 700,
+                                color: contentTheme.primary,
+                              ),
+                              MyText.bodySmall(
+                                'By ${c.activePrescription!.doctorName} · '
+                                '${c.activePrescription!.items.length} medicine(s) pre-loaded in cart',
+                                muted: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               Padding(
                 padding: MySpacing.x(flexSpacing),
                 child: LayoutBuilder(builder: (context, constraints) {

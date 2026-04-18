@@ -164,7 +164,65 @@ export const sendDailyReminders = onSchedule(
   }
 );
 
-// ── 4. createHospitalAdmin ────────────────────────────────────────────────
+// ── 4. sendSms ────────────────────────────────────────────────────────────
+// HTTPS Callable — proxies SMS requests to mNotify so browser CORS is bypassed.
+// Payload: { recipients: string[], message: string }
+
+export const sendSms = onCall(
+  { enforceAppCheck: false },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be logged in.");
+    }
+
+    const { recipients, message } = request.data as {
+      recipients: string[];
+      message: string;
+    };
+
+    if (!recipients?.length || !message) {
+      throw new HttpsError("invalid-argument", "recipients and message are required.");
+    }
+
+    const apiKey = "WUKb6M3un9vveHesNTHVbDyjQ";
+    const senderId = "SkillUp";
+
+    // Format numbers to Ghana local format (0XXXXXXXXX)
+    const formatted = recipients
+      .map((p: string) => {
+        const digits = p.replace(/\D/g, "");
+        if (digits.startsWith("233") && digits.length === 12) return "0" + digits.slice(3);
+        if (!digits.startsWith("0") && digits.length === 9) return "0" + digits;
+        return digits;
+      })
+      .filter((p: string) => p.length === 10 && p.startsWith("0"));
+
+    if (!formatted.length) {
+      throw new HttpsError("invalid-argument", "No valid Ghana phone numbers found.");
+    }
+
+    const response = await fetch(
+      `https://api.mnotify.com/api/sms/quick?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: formatted,
+          sender: senderId,
+          message,
+          is_schedule: "false",
+          schedule_date: "",
+        }),
+      }
+    );
+
+    const ok = response.status === 200 || response.status === 201;
+    const body = await response.text();
+    return { success: ok, status: response.status, body };
+  }
+);
+
+// ── 5. createHospitalAdmin ────────────────────────────────────────────────
 // HTTPS Callable — called once during hospital onboarding.
 // Creates a Firebase Auth user with role 'admin' and a users/{uid} doc.
 //

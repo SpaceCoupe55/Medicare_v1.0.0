@@ -185,6 +185,15 @@ class AppointmentListController extends MyController {
 
   void goToSchedulingScreen() => Get.toNamed(AppRoutes.appointmentSchedule);
 
+  void billAppointment(AppointmentModel appt) => Get.toNamed(
+        AppRoutes.invoiceCreate,
+        arguments: {
+          'appointmentId': appt.id,
+          'patientName': appt.name,
+          'doctorName': appt.consultingDoctor,
+        },
+      );
+
   @override
   void onClose() {
     searchTE.dispose();

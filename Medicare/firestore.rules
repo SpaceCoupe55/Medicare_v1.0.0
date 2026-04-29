@@ -71,7 +71,7 @@ service cloud.firestore {
     // A doctor may read their own record.
 
     match /doctors/{doctorId} {
-      allow read:  if isAdmin() || isOwner(doctorId);
+      allow read:  if isAdmin() || isDoctor();
       allow write: if isAdmin();
     }
 
@@ -116,6 +116,24 @@ service cloud.firestore {
       allow read:  if isAuthenticated() &&
                       resource.data.userId == request.auth.uid;
       allow write: if isAdmin();
+    }
+
+    // ── shifts ───────────────────────────────────────────────────────────────
+    // Admins have full access. All authenticated staff may read.
+
+    match /shifts/{shiftId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ── invoices ─────────────────────────────────────────────────────────────
+    // Admins and receptionists have full access.
+    // Doctors may read invoices linked to their patients.
+
+    match /invoices/{invoiceId} {
+      allow read:   if isAdmin() || hasRole('receptionist') || isDoctor();
+      allow create: if isAdmin() || hasRole('receptionist');
+      allow update: if isAdmin() || hasRole('receptionist');
     }
 
     // ── All other collections ────────────────────────────────────────────────

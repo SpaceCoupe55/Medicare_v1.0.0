@@ -100,12 +100,14 @@ class ReportsController extends MyController with UIMixin {
             .where('hospitalId', isEqualTo: hid)
             .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(yearStart))
             .where('createdAt', isLessThan: Timestamp.fromDate(yearEnd))
+            .orderBy('createdAt', descending: true)
             .get(),
         // 1 — patients this year
         db
             .collection('patients')
             .where('hospitalId', isEqualTo: hid)
             .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(yearStart))
+            .orderBy('createdAt', descending: true)
             .get(),
         // 2 — all doctors (small collection)
         db

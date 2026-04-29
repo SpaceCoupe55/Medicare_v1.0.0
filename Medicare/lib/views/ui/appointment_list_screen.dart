@@ -324,6 +324,23 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
                                                     color:
                                                         contentTheme.danger),
                                               ),
+                                              if (data.status ==
+                                                  AppointmentStatus
+                                                      .completed) ...[
+                                                MySpacing.width(8),
+                                                MyContainer(
+                                                  onTap: () => controller
+                                                      .billAppointment(data),
+                                                  paddingAll: 8,
+                                                  color: Colors.green
+                                                      .withAlpha(30),
+                                                  child: Icon(
+                                                      LucideIcons.receipt,
+                                                      size: 16,
+                                                      color: Colors.green
+                                                          .shade700),
+                                                ),
+                                              ],
                                             ],
                                           )),
                                         ]))

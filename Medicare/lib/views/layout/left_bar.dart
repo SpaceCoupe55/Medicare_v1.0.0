@@ -177,6 +177,21 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin, 
                           ],
                         ),
                         NavigationItem(
+                          iconData: LucideIcons.calendar_range,
+                          title: "Roster",
+                          isCondensed: isCondensed,
+                          route: AppRoutes.roster,
+                        ),
+                        MenuWidget(
+                          iconData: LucideIcons.receipt,
+                          isCondensed: isCondensed,
+                          title: "Billing",
+                          children: [
+                            MenuItem(title: "Invoices", isCondensed: isCondensed, route: AppRoutes.billingList),
+                            MenuItem(title: "New Invoice", isCondensed: isCondensed, route: AppRoutes.invoiceCreate),
+                          ],
+                        ),
+                        NavigationItem(
                           iconData: LucideIcons.message_square_text,
                           title: "SMS / Messaging",
                           isCondensed: isCondensed,

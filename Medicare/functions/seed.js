@@ -354,8 +354,8 @@ async function seedAppointments(uidMap, doctorIds, patientIds) {
       patientName:  pName,
       patientPhone: PATIENTS_TEMPLATE[a.patient]?.phone ?? '',
       patientEmail: pName.toLowerCase().replace(/\s+/g, '.') + '@example.com',
-      doctorId:     dUid,
-      doctorDocId:  dDocId,
+      doctorId:     dDocId,   // Firestore doctor doc ID (matches appointment booking)
+      doctorAuthId: dUid,     // Auth UID kept for reference/notifications
       doctorName:   a.doctor,
       gender:       PATIENTS_TEMPLATE[a.patient]?.gender ?? 'male',
       dateTime:     Timestamp.fromDate(dt),

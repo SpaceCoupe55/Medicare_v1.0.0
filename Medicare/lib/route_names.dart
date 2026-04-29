@@ -43,6 +43,14 @@ abstract class AppRoutes {
   // Prescription queue
   static const prescriptionQueue = '/admin/pharmacy/prescriptions';
 
+  // Billing & Invoicing
+  static const billingList   = '/admin/billing/list';
+  static const invoiceCreate = '/admin/billing/create';
+  static const invoiceDetail = '/admin/billing/detail';
+
+  // Staff Roster
+  static const roster = '/admin/roster';
+
   // Other
   static const chat = '/admin/chat';
   static const settings = '/admin/setting';

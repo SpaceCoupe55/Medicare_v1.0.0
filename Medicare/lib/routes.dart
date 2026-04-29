@@ -33,7 +33,11 @@ import 'package:medicare/views/ui/pharmacy_detail_screen.dart';
 import 'package:medicare/views/ui/pharmacy_edit_screen.dart';
 import 'package:medicare/views/ui/pharmacy_list_screen.dart';
 import 'package:medicare/views/ui/pharmacy_receipt_screen.dart';
+import 'package:medicare/views/ui/billing_list_screen.dart';
+import 'package:medicare/views/ui/roster_screen.dart';
 import 'package:medicare/views/ui/doctor_portal_screen.dart';
+import 'package:medicare/views/ui/invoice_create_screen.dart';
+import 'package:medicare/views/ui/invoice_detail_screen.dart';
 import 'package:medicare/views/ui/prescription_queue_screen.dart';
 import 'package:medicare/views/ui/reports_screen.dart';
 import 'package:medicare/views/ui/setting_screen.dart';
@@ -212,6 +216,30 @@ List<GetPage> getPageRoute() {
       name: AppRoutes.prescriptionQueue,
       page: () => const PrescriptionQueueScreen(),
       middlewares: _pharmacyStaff(),
+    ),
+
+    // ── Billing — admin or receptionist ──────────────────────────────────────
+    GetPage(
+      name: AppRoutes.billingList,
+      page: () => const BillingListScreen(),
+      middlewares: _pharmacyStaff(),
+    ),
+    GetPage(
+      name: AppRoutes.invoiceCreate,
+      page: () => const InvoiceCreateScreen(),
+      middlewares: _pharmacyStaff(),
+    ),
+    GetPage(
+      name: AppRoutes.invoiceDetail,
+      page: () => const InvoiceDetailScreen(),
+      middlewares: _pharmacyStaff(),
+    ),
+
+    // ── Staff Roster — admin only ─────────────────────────────────────────────
+    GetPage(
+      name: AppRoutes.roster,
+      page: () => const RosterScreen(),
+      middlewares: _adminOnly(),
     ),
 
     // ── Doctor portal — doctor role only ──────────────────────────────────────

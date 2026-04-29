@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ignore: unused_import — TextInput not re-exported by material.dart
 import 'package:medicare/helpers/services/auth_services.dart';
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
 import 'package:medicare/helpers/widgets/my_validators.dart';
@@ -49,6 +50,8 @@ class RegisterAccountController extends MyController {
         basicValidator.addErrors(errors);
         basicValidator.validateForm();
         basicValidator.clearErrors();
+      } else {
+        TextInput.finishAutofillContext(shouldSave: true);
       }
       Get.toNamed('/starter');
 

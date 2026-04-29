@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/semantics.dart';
 import 'package:medicare/helpers/localizations/app_localization_delegate.dart';
 import 'package:medicare/helpers/localizations/language.dart';
 import 'package:medicare/helpers/services/navigation_service.dart';
@@ -13,6 +14,7 @@ import 'package:medicare/controller/app_notification_controller.dart';
 import 'package:medicare/controller/cart_controller.dart';
 import 'package:medicare/routes.dart';
 import 'package:medicare/views/ui/error_pages/error_404_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -20,16 +22,26 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:url_strategy/url_strategy.dart';
 
+// Holds a reference so the semantics handle is never GC'd (dropping the handle
+// decrements the ref-count and disables the accessibility tree on Flutter Web).
+// ignore: unused_element
+SemanticsHandle? _semanticsHandle;
+
 Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      _semanticsHandle = SemanticsBinding.instance.ensureSemantics();
 
       // Log Flutter framework errors (layout overflows, build errors, etc.)
       // without navigating away — these are non-fatal in most cases.
       FlutterError.onError = FlutterError.presentError;
 
       await Firebase.initializeApp(options: Environment.firebaseOptions);
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
       Environment.log();
       setPathUrlStrategy();
 

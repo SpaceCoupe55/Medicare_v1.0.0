@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ignore: unused_import — TextInput not re-exported by material.dart
 import 'package:medicare/helpers/widgets/my_form_validator.dart';
 import 'package:medicare/helpers/widgets/my_validators.dart';
 import 'package:medicare/services/auth_service.dart';
@@ -53,6 +54,7 @@ class LoginController extends MyController {
       final password = basicValidator.getController('password')!.text;
 
       await _authService.signInWithEmail(email, password);
+      TextInput.finishAutofillContext(shouldSave: true);
 
       // AppAuthController will fetch the Firestore profile via userStream.
       // Navigate immediately — the middleware uses FirebaseAuth.currentUser.
